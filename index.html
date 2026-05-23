@@ -8,128 +8,171 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    *{
-        margin:0;
-        padding:0;
-        box-sizing:border-box;
-    }
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:#f4f7fb;
+    color:#1e293b;
+    padding:40px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+.page-title{
+    margin-bottom:35px;
+}
+
+.page-title h1{
+    font-size:34px;
+    font-weight:700;
+    margin-bottom:10px;
+    color:#0f172a;
+}
+
+.page-title .sub{
+    color:#64748b;
+    font-size:15px;
+}
+
+.module-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:25px;
+}
+
+.module-card{
+    background:#ffffff;
+    border-radius:20px;
+    padding:30px;
+    text-decoration:none;
+    transition:all .3s ease;
+    border:1px solid #e2e8f0;
+    box-shadow:0 10px 25px rgba(15,23,42,0.05);
+    position:relative;
+    overflow:hidden;
+}
+
+.module-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 18px 40px rgba(15,23,42,0.12);
+}
+
+.module-card::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:5px;
+}
+
+.proposal-card::before{
+    background:#2563eb;
+}
+
+.simple-card::before{
+    background:#f59e0b;
+}
+
+.modern-card::before{
+    background:#7c3aed;
+}
+
+.module-icon{
+    width:65px;
+    height:65px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:30px;
+    margin-bottom:22px;
+}
+
+.proposal-icon{
+    background:#dbeafe;
+    color:#2563eb;
+}
+
+.simple-icon{
+    background:#fef3c7;
+    color:#d97706;
+}
+
+.modern-icon{
+    background:#ede9fe;
+    color:#7c3aed;
+}
+
+.module-card h2{
+    font-size:24px;
+    margin-bottom:14px;
+    color:#0f172a;
+}
+
+.module-card p{
+    color:#64748b;
+    line-height:1.7;
+    font-size:15px;
+    margin-bottom:24px;
+    min-height:75px;
+}
+
+.module-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.status{
+    padding:7px 14px;
+    border-radius:30px;
+    font-size:13px;
+    font-weight:600;
+}
+
+.status-blue{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.status-orange{
+    background:#fef3c7;
+    color:#b45309;
+}
+
+.status-purple{
+    background:#ede9fe;
+    color:#6d28d9;
+}
+
+.open-btn{
+    color:#2563eb;
+    font-weight:600;
+    font-size:14px;
+}
+
+@media(max-width:768px){
 
     body{
-        font-family:'Inter',sans-serif;
-        background:#f4f7fb;
-        color:#1e293b;
-        padding:40px;
-    }
-
-    .container{
-        max-width:1000px;
-        margin:auto;
-    }
-
-    .page-title{
-        margin-bottom:35px;
+        padding:20px;
     }
 
     .page-title h1{
-        font-size:34px;
-        font-weight:700;
-        margin-bottom:10px;
-        color:#0f172a;
-    }
-
-    .page-title .sub{
-        color:#64748b;
-        font-size:15px;
-    }
-
-    .module-grid{
-        display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-        gap:25px;
-    }
-
-    .module-card{
-        background:#ffffff;
-        border-radius:18px;
-        padding:28px;
-        text-decoration:none;
-        transition:all .3s ease;
-        border:1px solid #e2e8f0;
-        box-shadow:0 8px 24px rgba(15,23,42,0.05);
-        position:relative;
-        overflow:hidden;
-    }
-
-    .module-card:hover{
-        transform:translateY(-5px);
-        box-shadow:0 15px 35px rgba(15,23,42,0.12);
-        border-color:#2563eb;
-    }
-
-    .module-icon{
-        width:60px;
-        height:60px;
-        border-radius:14px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
         font-size:28px;
-        margin-bottom:20px;
     }
 
-    .proposal-icon{
-        background:#dbeafe;
-        color:#2563eb;
-    }
+}
 
-    .ocr-icon{
-        background:#dcfce7;
-        color:#16a34a;
-    }
-
-    .module-card h2{
-        font-size:22px;
-        margin-bottom:12px;
-        color:#0f172a;
-    }
-
-    .module-card p{
-        color:#64748b;
-        line-height:1.6;
-        font-size:15px;
-        margin-bottom:20px;
-    }
-
-    .module-footer{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-    }
-
-    .status{
-        background:#ecfdf5;
-        color:#15803d;
-        padding:6px 12px;
-        border-radius:30px;
-        font-size:13px;
-        font-weight:600;
-    }
-
-    .open-btn{
-        color:#2563eb;
-        font-weight:600;
-        font-size:14px;
-    }
-
-    @media(max-width:768px){
-        body{
-            padding:20px;
-        }
-
-        .page-title h1{
-            font-size:28px;
-        }
-    }
 </style>
 </head>
 
@@ -139,15 +182,16 @@
 
     <div class="page-title">
         <h1>OE2 — Module Navigation</h1>
+
         <span class="sub">
-            Enterprise Module Designs · Proposal & OCR Automation · May 2026
+            Proposal & OCR Invoice Automation Module Designs · May 2026
         </span>
     </div>
 
     <div class="module-grid">
 
         <!-- Proposal Module -->
-        <a href="OE2_Proposal_Module_Design.html" class="module-card">
+        <a href="OE2_Proposal_Module_Design.html" class="module-card proposal-card">
 
             <div class="module-icon proposal-icon">
                 📋
@@ -156,34 +200,58 @@
             <h2>Proposal Module</h2>
 
             <p>
-                Manage proposal workflow, approvals, customer estimates,
-                pricing structures, and quotation management screens.
+                Proposal workflow management, approvals,
+                customer quotations, pricing structure,
+                and estimation process screens.
             </p>
 
             <div class="module-footer">
-                <span class="status">Available</span>
+                <span class="status status-blue">Available</span>
                 <span class="open-btn">Open Module →</span>
             </div>
 
         </a>
 
-        <!-- OCR Reader Module -->
-        <a href="OCR_Invoice_Module_Design.html" class="module-card">
+        <!-- Simple OCR Design -->
+        <a href="OCR_Invoice_Simple_Design.html" class="module-card simple-card">
 
-            <div class="module-icon ocr-icon">
-                🧾
+            <div class="module-icon simple-icon">
+                📄
             </div>
 
-            <h2>Paint Cost OCR Reader</h2>
+            <h2>OCR Invoice – Simple Design</h2>
 
             <p>
-                Automated invoice scanning, OCR data extraction,
-                AP number recognition, and paint cost processing workflow.
+                Clean and lightweight invoice OCR design
+                with basic tables, invoice review,
+                and manual data entry workflow.
             </p>
 
             <div class="module-footer">
-                <span class="status">Available</span>
-                <span class="open-btn">Open Module →</span>
+                <span class="status status-orange">Simple UI</span>
+                <span class="open-btn">Open Design →</span>
+            </div>
+
+        </a>
+
+        <!-- Modern OCR Design -->
+        <a href="OCR_Invoice_Module_Design.html" class="module-card modern-card">
+
+            <div class="module-icon modern-icon">
+                ✨
+            </div>
+
+            <h2>OCR Invoice – Modern Design</h2>
+
+            <p>
+                Advanced enterprise OCR dashboard with
+                analytics, automation workflow,
+                invoice preview, and AI-powered UI.
+            </p>
+
+            <div class="module-footer">
+                <span class="status status-purple">Modern UI</span>
+                <span class="open-btn">Open Design →</span>
             </div>
 
         </a>
