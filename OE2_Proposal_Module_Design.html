@@ -496,7 +496,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
       <li><b>Step 1 — Choose Customer Type:</b> Select <b>Existing Customer</b> and use the Lookup button to find them in OE2, <i>or</i> select <b>Prospect (New)</b> and type their name directly — no lookup required for prospects.</li>
       <li><b>Step 2 — Fill in Job Details:</b> Enter Job Name, Floor, Address, City, State, Zip, and a Description of the scope of work. These fields will also appear on the printed proposal.</li>
       <li><b>Step 3 — Set Status &amp; Tax:</b> Status starts as <b>Draft</b>. Select the correct Tax Code (e.g., NYC – 8.875%). Update Status to <b>Sent</b> after emailing or printing for the customer.</li>
-      <li><b>Step 4 — Add Line Items:</b> In the <b>Proposal Items</b> section, click <b>+ Add New Item</b> for each service being quoted. Enter the Description, Quantity, and Unit Price. The Total is calculated automatically. Use the <b>ALT *</b> checkbox to mark any item as an Alternate (excluded from the main subtotal on the printed proposal).</li>
+      <li><b>Step 4 — Add Line Items:</b> In the <b>Proposal Items</b> section, click <b>+ Add New Item</b> for each service being quoted. Enter the <b>Item Name</b> (short label, e.g., "Wall Prep"), <b>Description</b> (full scope detail), Quantity, and Unit Price. The Total is calculated automatically. Use the <b>ALT *</b> checkbox to mark any item as an Alternate (excluded from the main subtotal on the printed proposal).</li>
       <li><b>Step 5 — Save:</b> Click <b>Save Proposal</b> to save and return to the listing, or continue editing.</li>
     </ul>
     <br/>
@@ -615,16 +615,18 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
         <table class="oe2-items-table">
           <thead>
             <tr>
-              <th style="width:44%">Description</th>
-              <th style="width:8%" class="center">Qty</th>
-              <th style="width:14%">Unit Price ($)</th>
-              <th style="width:13%">Total ($)</th>
-              <th style="width:7%" class="center" title="Mark as Alternate — excluded from main subtotal on printed proposal">ALT *</th>
-              <th style="width:14%">Action</th>
+              <th style="width:17%">Item Name</th>
+              <th style="width:27%">Description</th>
+              <th style="width:7%" class="center">Qty</th>
+              <th style="width:13%">Unit Price ($)</th>
+              <th style="width:12%">Total ($)</th>
+              <th style="width:6%" class="center" title="Mark as Alternate — excluded from main subtotal on printed proposal">ALT *</th>
+              <th style="width:18%">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Site Preparation" readonly/></td>
               <td><input class="oe2-input" style="width:98%;" value="Site Preparation &amp; Grading" readonly/></td>
               <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
               <td><input class="oe2-input" style="width:90px;" value="8,000.00" readonly/></td>
@@ -633,6 +635,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
               <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
             </tr>
             <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Foundation Work" readonly/></td>
               <td><input class="oe2-input" style="width:98%;" value="Concrete Foundation Work" readonly/></td>
               <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
               <td><input class="oe2-input" style="width:90px;" value="12,000.00" readonly/></td>
@@ -641,6 +644,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
               <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
             </tr>
             <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Electrical Rough-in" readonly/></td>
               <td><input class="oe2-input" style="width:98%;" value="Electrical Rough-in (Alternate)" readonly/></td>
               <td class="center"><input class="oe2-input w80" value="2" readonly/></td>
               <td><input class="oe2-input" style="width:90px;" value="2,250.00" readonly/></td>
@@ -648,7 +652,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
               <td class="alt-cell"><input type="checkbox" class="alt-chk" checked/></td>
               <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
             </tr>
-            <tr class="add-row"><td colspan="6">＋ Add New Item</td></tr>
+            <tr class="add-row"><td colspan="7">＋ Add New Item</td></tr>
           </tbody>
         </table>
         <div class="oe2-items-total">
@@ -776,12 +780,44 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
       <div class="oe2-form-section-bar" style="margin-top:14px;">Proposal Items <span>Hide ▲</span></div>
       <div class="oe2-items-wrap">
         <table class="oe2-items-table">
-          <thead><tr><th style="width:44%">Description</th><th style="width:8%" class="center">Qty</th><th style="width:14%">Unit Price ($)</th><th style="width:13%">Total ($)</th><th style="width:7%" class="center">ALT *</th><th style="width:14%">Action</th></tr></thead>
+          <thead><tr>
+            <th style="width:17%">Item Name</th>
+            <th style="width:27%">Description</th>
+            <th style="width:7%" class="center">Qty</th>
+            <th style="width:13%">Unit Price ($)</th>
+            <th style="width:12%">Total ($)</th>
+            <th style="width:6%" class="center">ALT *</th>
+            <th style="width:18%">Action</th>
+          </tr></thead>
           <tbody>
-            <tr><td><input class="oe2-input" style="width:98%;" value="Lobby Wall Preparation" readonly/></td><td class="center"><input class="oe2-input w80" value="1" readonly/></td><td><input class="oe2-input" style="width:90px;" value="3,500.00" readonly/></td><td><b>$3,500.00</b></td><td class="alt-cell"><input type="checkbox" class="alt-chk"/></td><td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td></tr>
-            <tr><td><input class="oe2-input" style="width:98%;" value="Ceiling Paint – 2 Coats" readonly/></td><td class="center"><input class="oe2-input w80" value="1" readonly/></td><td><input class="oe2-input" style="width:90px;" value="3,250.00" readonly/></td><td><b>$3,250.00</b></td><td class="alt-cell"><input type="checkbox" class="alt-chk"/></td><td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td></tr>
-            <tr><td><input class="oe2-input" style="width:98%;" value="Door Refinishing (Alternate)" readonly/></td><td class="center"><input class="oe2-input w80" value="2" readonly/></td><td><input class="oe2-input" style="width:90px;" value="1,000.00" readonly/></td><td><b style="color:#e07b00;">$2,000.00 *</b></td><td class="alt-cell"><input type="checkbox" class="alt-chk" checked/></td><td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td></tr>
-            <tr class="add-row"><td colspan="6">＋ Add New Item</td></tr>
+            <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Wall Preparation" readonly/></td>
+              <td><input class="oe2-input" style="width:98%;" value="Lobby Wall Preparation" readonly/></td>
+              <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
+              <td><input class="oe2-input" style="width:90px;" value="3,500.00" readonly/></td>
+              <td><b>$3,500.00</b></td>
+              <td class="alt-cell"><input type="checkbox" class="alt-chk"/></td>
+              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
+            </tr>
+            <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Ceiling Paint" readonly/></td>
+              <td><input class="oe2-input" style="width:98%;" value="Ceiling Paint – 2 Coats" readonly/></td>
+              <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
+              <td><input class="oe2-input" style="width:90px;" value="3,250.00" readonly/></td>
+              <td><b>$3,250.00</b></td>
+              <td class="alt-cell"><input type="checkbox" class="alt-chk"/></td>
+              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
+            </tr>
+            <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Door Refinishing" readonly/></td>
+              <td><input class="oe2-input" style="width:98%;" value="Door Refinishing (Alternate)" readonly/></td>
+              <td class="center"><input class="oe2-input w80" value="2" readonly/></td>
+              <td><input class="oe2-input" style="width:90px;" value="1,000.00" readonly/></td>
+              <td><b style="color:#e07b00;">$2,000.00 *</b></td>
+              <td class="alt-cell"><input type="checkbox" class="alt-chk" checked/></td>
+              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
+            </tr>
+            <tr class="add-row"><td colspan="7">＋ Add New Item</td></tr>
           </tbody>
         </table>
         <div class="oe2-items-total">Subtotal (excl. ALT): &nbsp;$6,750.00 &nbsp;&nbsp;|&nbsp;&nbsp; ALT Items: &nbsp;$2,000.00 &nbsp;&nbsp;|&nbsp;&nbsp; <span style="font-size:14px;">Proposal Total : &nbsp; $8,750.00</span></div>
@@ -856,17 +892,28 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
 
           <div class="chk-row" style="background:#f0fff4;border-radius:3px;">
             <div class="chk-box on">✓</div>
-            <div style="flex:1;"><b>Lobby Wall Preparation</b><div style="color:#666;font-size:11px;">Qty: 1 · Unit: $3,500.00</div></div>
+            <div style="flex:1;">
+              <b>Wall Preparation</b>
+              <div style="color:#555;font-size:11px;">Lobby Wall Preparation</div>
+              <div style="color:#666;font-size:11px;">Qty: 1 · Unit: $3,500.00</div>
+            </div>
             <div style="text-align:right;"><div style="font-weight:bold;">$3,500.00</div><div style="font-size:10px;color:#16a34a;">→ Extra Job #1</div></div>
           </div>
           <div class="chk-row" style="background:#f0fff4;border-radius:3px;">
             <div class="chk-box on">✓</div>
-            <div style="flex:1;"><b>Ceiling Paint – 2 Coats</b><div style="color:#666;font-size:11px;">Qty: 1 · Unit: $3,250.00</div></div>
+            <div style="flex:1;">
+              <b>Ceiling Paint</b>
+              <div style="color:#555;font-size:11px;">Ceiling Paint – 2 Coats</div>
+              <div style="color:#666;font-size:11px;">Qty: 1 · Unit: $3,250.00</div>
+            </div>
             <div style="text-align:right;"><div style="font-weight:bold;">$3,250.00</div><div style="font-size:10px;color:#16a34a;">→ Extra Job #2</div></div>
           </div>
           <div class="chk-row">
             <div class="chk-box"></div>
-            <div style="flex:1;"><b>Door Refinishing</b> <span style="font-size:10px;background:#fff3cd;color:#856404;padding:1px 5px;border-radius:8px;margin-left:4px;">ALT</span><div style="color:#aaa;font-size:11px;">Not selected</div></div>
+            <div style="flex:1;">
+              <b>Door Refinishing</b> <span style="font-size:10px;background:#fff3cd;color:#856404;padding:1px 5px;border-radius:8px;margin-left:4px;">ALT</span>
+              <div style="color:#aaa;font-size:11px;">Not selected</div>
+            </div>
             <div style="color:#aaa;font-size:12px;">$2,000.00</div>
           </div>
 
