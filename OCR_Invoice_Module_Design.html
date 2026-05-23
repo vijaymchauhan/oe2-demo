@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OE2 – Invoice OCR Automation Module Design</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
+
+/* ── Doc labels ── */
+.doc-label{background:#1e3a5f;color:#fff;font-size:13px;font-weight:700;padding:7px 18px;margin:32px 0 0;border-radius:4px 4px 0 0;display:inline-block;}
+.doc-desc{background:#fff;border:1px solid #c8dcf5;border-top:3px solid #2563eb;border-radius:0 4px 4px 4px;padding:14px 18px;font-size:12px;color:#222;margin:0 0 16px;line-height:1.8;}
+.doc-desc h4{font-size:13px;color:#1e3a5f;margin-bottom:6px;font-weight:700;}
+.doc-desc ul{padding-left:18px;margin:4px 0 8px;}
+.doc-desc ul li{margin-bottom:3px;}
+
+/* ── Workflow ── */
+.wf-wrap{max-width:1300px;margin:24px auto 0;}
+.wf-box{background:#fff;border:1px solid #c8dcf5;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.wf-title{background:#1e3a5f;color:#fff;padding:12px 20px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.wf-body{padding:18px 20px;}
+.wf-steps{display:flex;align-items:stretch;overflow-x:auto;gap:0;}
+.wstep{flex:1;min-width:145px;text-align:center;position:relative;padding:14px 10px 12px;border-right:1px solid #e2e8f0;}
+.wstep:last-child{border-right:none;}
+.wstep-num{width:30px;height:30px;border-radius:50%;background:#2563eb;color:#fff;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;}
+.wstep-icon{font-size:22px;margin-bottom:5px;}
+.wstep-title{font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:3px;}
+.wstep-desc{font-size:10px;color:#555;line-height:1.5;}
+.wstep-arrow{position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:16px;color:#4a90d9;font-weight:bold;z-index:2;}
+.wf-rules{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:14px;}
+.wrule{background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #4a90d9;border-radius:3px;padding:8px 12px;font-size:11px;}
+.wrule h5{font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:4px;}
+.wrule ul{padding-left:14px;color:#374151;line-height:1.7;}
+
+/* ── OE2 Chrome ── */
+.oe2-app{max-width:1300px;margin:0 auto 40px;border:1px solid #aaa;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.18);}
+.oe2-topbar{background:#fff;padding:6px 12px 4px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ccc;}
+.oe2-logo{font-size:22px;font-weight:bold;color:#8B1A1A;}
+.oe2-userinfo{font-size:12px;color:#333;}
+.oe2-userinfo span{margin-left:14px;}
+.oe2-userinfo a{color:#1a5276;text-decoration:none;}
+.oe2-nav{display:flex;align-items:flex-end;padding:4px 6px 0;background:#fff;gap:2px;}
+.oe2-nav-home{width:32px;height:28px;background:#fff;border:1px solid #aaa;display:flex;align-items:center;justify-content:center;margin-right:4px;cursor:pointer;border-radius:3px 3px 0 0;font-size:16px;}
+.oe2-tab{padding:5px 16px;font-size:12px;font-weight:bold;border:1px solid #aaa;border-bottom:none;background:#e8e8e8;color:#333;cursor:pointer;border-radius:3px 3px 0 0;}
+.oe2-tab.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.oe2-banner{background:linear-gradient(to right,#4a90d9,#5ba3e8);padding:6px 14px;display:flex;align-items:center;gap:10px;min-height:52px;}
+.oe2-banner-icon{width:34px;height:34px;background:#fff;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:18px;}
+.oe2-banner-label{font-size:15px;font-weight:bold;color:#cc3300;}
+.oe2-banner-sub{font-size:11px;color:rgba(255,255,255,.85);margin-left:auto;}
+.oe2-content{background:#fff;}
+
+/* ── OCR Left Sidebar ── */
+.ocr-layout{display:flex;min-height:560px;}
+.ocr-sidenav{width:196px;flex-shrink:0;background:#1e2d3d;color:#b8c5d3;padding:6px 0;}
+.ocr-sidenav-section{padding:8px 14px 3px;font-size:10px;font-weight:700;color:#5a7a94;letter-spacing:.7px;text-transform:uppercase;margin-top:6px;}
+.ocr-nav-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;color:#b8c5d3;cursor:pointer;}
+.ocr-nav-item:hover{background:#253649;color:#fff;}
+.ocr-nav-item.active{background:#4a90d9;color:#fff;}
+.ocr-nav-icon{font-size:13px;width:16px;text-align:center;}
+.ocr-nav-badge{margin-left:auto;background:#c62828;color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:8px;}
+.ocr-nav-badge.warn{background:#e07b00;}
+.ocr-main{flex:1;min-width:0;}
+
+/* ── Service Status Bar ── */
+.svc-bar{background:#1e2d3d;display:flex;align-items:center;gap:18px;padding:6px 14px;font-size:11px;color:#b8c5d3;flex-wrap:wrap;border-bottom:1px solid #14202d;}
+.svc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+.svc-dot.g{background:#4caf50;box-shadow:0 0 5px #4caf50;}
+.svc-dot.r{background:#f44336;box-shadow:0 0 5px #f44336;}
+.svc-dot.y{background:#ffb300;box-shadow:0 0 5px #ffb300;}
+.svc-item{display:flex;align-items:center;gap:3px;}
+.svc-item b{color:#e0e8f0;}
+.svc-bar-right{margin-left:auto;display:flex;gap:10px;align-items:center;}
+
+/* ── Stat Cards ── */
+.stat-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:14px 14px 10px;}
+.stat-card{border-radius:6px;padding:12px 13px;color:#fff;position:relative;overflow:hidden;}
+.sc1{background:linear-gradient(135deg,#4a90d9,#2563eb);}
+.sc2{background:linear-gradient(135deg,#f57c00,#e65100);}
+.sc3{background:linear-gradient(135deg,#c62828,#b71c1c);}
+.sc4{background:linear-gradient(135deg,#7b1fa2,#6a1b9a);}
+.sc5{background:linear-gradient(135deg,#2e7d32,#1b5e20);}
+.sc6{background:linear-gradient(135deg,#0277bd,#01579b);}
+.sc-icon{font-size:24px;position:absolute;right:10px;top:10px;opacity:.25;}
+.sc-num{font-size:26px;font-weight:bold;line-height:1;}
+.sc-label{font-size:10px;opacity:.88;margin-top:4px;}
+.sc-delta{font-size:10px;margin-top:5px;}
+.sc-delta.up{color:#a5d6a7;}
+.sc-delta.dn{color:#ef9a9a;}
+
+/* ── Mini Bar Chart ── */
+.chart-block{padding:12px 14px;border-bottom:1px solid #eee;}
+.chart-title{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:10px;}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:70px;padding-bottom:4px;border-bottom:1px solid #e0e0e0;}
+.bc{display:flex;flex-direction:column;align-items:center;flex:1;}
+.bf{width:100%;border-radius:3px 3px 0 0;}
+.bf-blue{background:#4a90d9;}
+.bf-green{background:#43a047;}
+.bc-lbl{font-size:9px;color:#777;margin-top:3px;}
+
+/* ── Donut/Ring indicator (CSS only) ── */
+.ring-wrap{display:flex;align-items:center;gap:14px;padding:12px 14px;}
+.ring-box{position:relative;width:76px;height:76px;flex-shrink:0;}
+.ring-svg{width:76px;height:76px;}
+.ring-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-pct{font-size:16px;font-weight:bold;}
+.ring-lbl{font-size:9px;color:#888;}
+.ring-info{flex:1;}
+.ring-info-title{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:6px;}
+.ring-legend{font-size:11px;line-height:1.9;color:#555;}
+.ring-legend span{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+
+/* ── OCR Confidence ── */
+.conf-bar-wrap{display:flex;align-items:center;gap:6px;}
+.conf-bar{height:5px;border-radius:3px;background:#e0e0e0;flex:1;min-width:50px;}
+.conf-fill{height:100%;border-radius:3px;}
+.cf-hi{background:#4caf50;} .cf-mi{background:#ff9800;} .cf-lo{background:#f44336;}
+.conf-pct{font-size:11px;font-weight:bold;white-space:nowrap;}
+.conf-pct.hi{color:#2e7d32;} .conf-pct.mi{color:#e65100;} .conf-pct.lo{color:#c62828;}
+.conf-badge{display:inline-block;font-size:10px;font-weight:bold;padding:1px 6px;border-radius:8px;}
+.cb-hi{background:#e8f5e9;color:#2e7d32;} .cb-mi{background:#fff3e0;color:#e65100;} .cb-lo{background:#ffebee;color:#c62828;}
+
+/* ── Badges ── */
+.oe2-badge{display:inline-block;font-size:10px;font-weight:bold;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.b-pending{background:#fff3cd;color:#856404;}
+.b-processing{background:#cce5ff;color:#004085;}
+.b-completed{background:#d4edda;color:#155724;}
+.b-failed{background:#f8d7da;color:#721c24;}
+.b-review{background:#fff0e6;color:#7c3e00;}
+.b-approved{background:#d4edda;color:#155724;}
+.b-draft{background:#e8e8e8;color:#444;}
+.b-running{background:#d4edda;color:#155724;}
+.b-stopped{background:#f8d7da;color:#721c24;}
+.b-warning{background:#fff3cd;color:#856404;}
+.b-new{background:#e3f2fd;color:#1565c0;}
+
+/* ── Grid ── */
+.oe2-grid{width:100%;border-collapse:collapse;font-size:12px;}
+.oe2-grid th{background:#fff;color:#111;font-weight:bold;padding:7px 8px;border-bottom:2px solid #4a90d9;text-align:left;white-space:nowrap;}
+.oe2-grid th.center,.oe2-grid td.center{text-align:center;}
+.oe2-grid td{padding:6px 8px;border-bottom:1px solid #e8e8e8;vertical-align:middle;}
+.oe2-grid tr:hover td{background:#eef4fb;}
+.oe2-grid .lnk{color:#8B1A1A;cursor:pointer;font-weight:bold;text-decoration:none;}
+.oe2-grid .lnk:hover{text-decoration:underline;}
+.oe2-grid .chk{width:14px;height:14px;cursor:pointer;}
+
+/* ── Toolbar & Buttons ── */
+.ocr-toolbar{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f8f8f8;border-bottom:1px solid #ddd;flex-wrap:wrap;}
+.oe2-btn{padding:3px 11px;font-size:12px;font-weight:bold;border:1px solid #aaa;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+.btn-blue{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.btn-white{background:#fff;color:#333;border-color:#aaa;}
+.btn-green{background:#2e7d32;color:#fff;border-color:#1b5e20;}
+.btn-red{background:#c62828;color:#fff;border-color:#b71c1c;}
+.btn-orange{background:#e07b00;color:#fff;border-color:#c56e00;}
+.btn-gray{background:#616161;color:#fff;border-color:#424242;}
+.btn-purple{background:#7b1fa2;color:#fff;border-color:#6a1b9a;}
+.btn-sep{width:1px;height:20px;background:#ddd;margin:0 2px;}
+
+/* ── Search & Filters ── */
+.ocr-search-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#fff;border-bottom:1px solid #eee;flex-wrap:wrap;}
+.f-input{height:26px;border:1px solid #bbb;padding:0 8px;font-size:12px;border-radius:3px;}
+.f-input.w180{width:180px;} .f-input.w120{width:120px;} .f-input.w100{width:100px;}
+.f-select{height:26px;border:1px solid #bbb;padding:0 4px;font-size:12px;border-radius:3px;background:#fff;}
+.f-select.w130{width:130px;} .f-select.w110{width:110px;}
+
+/* ── Status Tabs ── */
+.status-tabs{display:flex;gap:3px;padding:7px 12px 0;background:#fff;flex-wrap:wrap;}
+.st-tab{padding:4px 12px;font-size:12px;font-weight:bold;border:1px solid #ddd;border-bottom:none;border-radius:3px 3px 0 0;cursor:pointer;background:#f0f0f0;color:#555;}
+.st-tab.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.st-tab .n{font-size:10px;margin-left:3px;background:rgba(0,0,0,.12);padding:0 4px;border-radius:5px;}
+.st-tab.active .n{background:rgba(255,255,255,.25);}
+
+/* ── Grid area ── */
+.grid-area{padding:0 12px 12px;}
+
+/* ── Form ── */
+.ocr-form-area{padding:12px 16px;}
+.form-section{background:#fff;border:1px solid #e0e0e0;border-radius:4px;margin-bottom:12px;overflow:hidden;}
+.form-section-hdr{background:#e8e8e8;border-bottom:1px solid #ccc;padding:5px 12px;font-size:13px;font-weight:bold;color:#222;display:flex;justify-content:space-between;align-items:center;}
+.form-body{padding:12px 14px;}
+.f-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+.f-row label{font-size:12px;color:#333;min-width:130px;font-weight:bold;flex-shrink:0;}
+.f-inp{height:26px;border:1px solid #bbb;padding:0 8px;font-size:12px;border-radius:3px;background:#fff;}
+.f-inp.w140{width:140px;} .f-inp.w200{width:200px;} .f-inp.w300{width:300px;} .f-inp.w400{width:400px;} .f-inp.w100{width:100px;} .f-inp.w80{width:80px;}
+.f-sel{height:26px;border:1px solid #bbb;padding:0 4px;font-size:12px;border-radius:3px;background:#fff;}
+.f-sel.w160{width:160px;} .f-sel.w200{width:200px;} .f-sel.w120{width:120px;}
+.f-textarea{border:1px solid #bbb;padding:6px 8px;font-size:12px;border-radius:3px;resize:vertical;width:100%;min-height:65px;}
+
+/* ── Toggle ── */
+.toggle-wrap{display:flex;align-items:center;gap:8px;}
+.toggle{position:relative;display:inline-block;width:38px;height:20px;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:20px;transition:.3s;}
+.slider:before{position:absolute;content:"";height:14px;width:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked + .slider{background:#4a90d9;}
+.toggle input:checked + .slider:before{transform:translateX(18px);}
+.toggle-label{font-size:12px;font-weight:bold;}
+.toggle-label.on{color:#2e7d32;}
+
+/* ── Folder path widget ── */
+.path-widget{display:flex;align-items:center;}
+.path-widget input{flex:1;height:26px;border:1px solid #bbb;padding:0 8px;font-size:12px;border-radius:3px 0 0 3px;}
+.path-widget .browse{height:26px;padding:0 10px;border:1px solid #bbb;border-left:none;background:#e8e8e8;font-size:11px;border-radius:0 3px 3px 0;cursor:pointer;white-space:nowrap;}
+
+/* ── Upload area ── */
+.upload-drop{border:2px dashed #4a90d9;border-radius:6px;padding:28px 20px;text-align:center;background:#f8fbff;cursor:pointer;}
+.upload-icon{font-size:38px;color:#4a90d9;margin-bottom:8px;}
+.upload-text{font-size:13px;color:#333;font-weight:bold;margin-bottom:3px;}
+.upload-sub{font-size:11px;color:#888;}
+
+/* ── Invoice Viewer ── */
+.viewer-layout{display:flex;min-height:580px;}
+.viewer-left{flex:1.2;background:#525659;border-right:1px solid #333;display:flex;flex-direction:column;}
+.viewer-toolbar{background:#3c3f41;padding:6px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.v-btn{background:#555;border:1px solid #444;color:#ddd;padding:3px 8px;border-radius:3px;font-size:11px;cursor:pointer;}
+.v-btn:hover{background:#666;}
+.viewer-canvas{flex:1;padding:16px;display:flex;justify-content:center;overflow-y:auto;}
+.viewer-page{background:#fff;width:420px;min-height:580px;box-shadow:0 2px 16px rgba(0,0,0,.4);padding:20px;font-size:11px;}
+.viewer-panel{width:280px;flex-shrink:0;display:flex;flex-direction:column;background:#fff;}
+.vp-hdr{background:#1e3a5f;color:#fff;padding:7px 12px;font-size:13px;font-weight:700;}
+.vp-field{padding:7px 12px;border-bottom:1px solid #eee;}
+.vp-field label{font-size:10px;color:#888;display:block;margin-bottom:2px;}
+.vp-val{font-size:12px;color:#222;font-weight:bold;}
+
+/* ── Timeline ── */
+.timeline{padding:8px 14px;}
+.tl-item{display:flex;gap:10px;margin-bottom:10px;position:relative;}
+.tl-item::before{content:"";position:absolute;left:13px;top:26px;bottom:-10px;width:2px;background:#e0e0e0;}
+.tl-item:last-child::before{display:none;}
+.tl-dot{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.tl-blue{background:#e3f2fd;color:#1565c0;}
+.tl-green{background:#e8f5e9;color:#2e7d32;}
+.tl-red{background:#ffebee;color:#c62828;}
+.tl-orange{background:#fff3e0;color:#e65100;}
+.tl-body{flex:1;}
+.tl-title{font-size:12px;font-weight:bold;color:#222;}
+.tl-sub{font-size:11px;color:#666;}
+.tl-time{font-size:10px;color:#aaa;margin-top:1px;}
+
+/* ── Log table ── */
+.log-level{display:inline-block;font-size:10px;font-weight:bold;padding:1px 6px;border-radius:3px;}
+.ll-info{background:#e3f2fd;color:#1565c0;}
+.ll-warn{background:#fff3e0;color:#e65100;}
+.ll-err{background:#ffebee;color:#c62828;}
+.ll-dbg{background:#f3e5f5;color:#6a1b9a;}
+
+/* ── Alert panel ── */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid #eee;background:#fff;}
+.alert-item:hover{background:#fafafa;}
+.al-icon{font-size:18px;width:26px;text-align:center;flex-shrink:0;}
+.al-body{flex:1;}
+.al-title{font-size:12px;font-weight:bold;color:#222;}
+.al-sub{font-size:11px;color:#666;margin-top:1px;}
+.al-time{font-size:10px;color:#999;flex-shrink:0;}
+
+/* ── Breadcrumb ── */
+.breadcrumb{font-size:11px;color:#888;padding:5px 14px;background:#f8f8f8;border-bottom:1px solid #eee;display:flex;align-items:center;gap:4px;}
+.breadcrumb a{color:#4a90d9;text-decoration:none;}
+.breadcrumb .sep{color:#ccc;}
+
+/* ── Field with confidence inline ── */
+.field-conf-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.field-conf-row label{font-size:12px;color:#333;min-width:130px;font-weight:bold;flex-shrink:0;}
+.field-conf-row .f-inp{flex:1;max-width:260px;}
+.field-conf-row .conf-tag{font-size:10px;padding:1px 6px;border-radius:8px;font-weight:bold;white-space:nowrap;}
+.conf-tag-hi{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;}
+.conf-tag-mi{background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;}
+.conf-tag-lo{background:#ffebee;color:#c62828;border:1px solid #ffcdd2;}
+.f-inp.hi-border{border-color:#4caf50;}
+.f-inp.mi-border{border-color:#ff9800;background:#fffbf5;}
+.f-inp.lo-border{border-color:#f44336;background:#fff5f5;}
+
+/* ── OCR mapping table ── */
+.mapping-table{width:100%;border-collapse:collapse;font-size:12px;}
+.mapping-table th{background:#e8e8e8;padding:6px 10px;text-align:left;font-weight:bold;border-bottom:1px solid #ccc;}
+.mapping-table td{padding:6px 10px;border-bottom:1px solid #eee;vertical-align:middle;}
+.mapping-table tr:nth-child(even) td{background:#fafafa;}
+
+/* ── Pagination ── */
+.pagination{display:flex;align-items:center;gap:3px;padding:8px 12px;border-top:1px solid #eee;}
+.pg-btn{width:26px;height:26px;border:1px solid #ddd;background:#fff;border-radius:3px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.pg-btn.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.pg-info{font-size:11px;color:#666;margin-left:8px;}
+
+/* ── Notification badge ── */
+.notif-badge{background:#c62828;color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:8px;margin-left:4px;}
+
+/* ── Two-col layout ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 14px;}
+.two-col-7-3{display:grid;grid-template-columns:7fr 3fr;gap:12px;padding:12px 14px;}
+.col-card{background:#fff;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;}
+.col-card-hdr{background:#f0f4f8;border-bottom:1px solid #e0e0e0;padding:6px 12px;font-size:12px;font-weight:700;color:#1e3a5f;display:flex;align-items:center;justify-content:space-between;}
+.col-card-body{padding:10px 12px;}
+
+/* ── Slider ── */
+.range-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.range-row label{font-size:12px;font-weight:bold;color:#333;min-width:130px;flex-shrink:0;}
+input[type=range]{width:160px;accent-color:#4a90d9;}
+.range-val{font-size:12px;font-weight:bold;color:#2563eb;min-width:36px;}
+
+/* ── Checkbox group ── */
+.chk-group{display:flex;gap:16px;flex-wrap:wrap;}
+.chk-item{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;}
+
+/* ── Misc ── */
+.section-wrap{max-width:1300px;margin:0 auto;}
+.divider{height:1px;background:#ddd;margin:4px 0;}
+.muted{color:#888;font-size:11px;}
+.bold{font-weight:bold;}
+.text-green{color:#2e7d32;}
+.text-red{color:#c62828;}
+.text-orange{color:#e07b00;}
+.text-blue{color:#1565c0;}
+.info-box{background:#e3f2fd;border:1px solid #90caf9;border-radius:4px;padding:8px 12px;font-size:11px;color:#1565c0;margin-bottom:10px;}
+.warn-box{background:#fff3e0;border:1px solid #ffcc02;border-radius:4px;padding:8px 12px;font-size:11px;color:#e65100;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE TITLE
+     ═══════════════════════════════════════════════════════ -->
+<div style="max-width:1300px;margin:20px auto 0;padding:0;">
+  <div style="background:#1e3a5f;color:#fff;padding:14px 22px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:18px;font-weight:700;">📄 OE2 — Invoice OCR Automation Module</div>
+      <div style="font-size:11px;color:#9db8d8;margin-top:3px;">UI Design Specification · v1.0 · May 2026 · 10 Screens + System Overview</div>
+    </div>
+    <div style="font-size:13px;color:#9db8d8;">Albert Pearlman, Inc.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SYSTEM OVERVIEW / WORKFLOW
+     ═══════════════════════════════════════════════════════ -->
+<div class="wf-wrap">
+  <div class="doc-label">System Overview — Invoice OCR Automation</div>
+  <div class="doc-desc">
+    <h4>How the system works</h4>
+    <p>The Invoice OCR Automation module is a background Windows Service that monitors a configured folder on the server. When invoice files (PDF, JPG, PNG) are dropped into that folder, the service automatically picks them up, runs OCR (optical character recognition) to extract invoice data, and places results into a review queue inside OE2. After a user reviews and approves, the invoice data is linked to a Paint Cost job in OE2.</p>
+    <ul>
+      <li><b>No manual upload needed</b> — just drop files in the monitored folder and the system handles the rest.</li>
+      <li><b>OCR Confidence scoring</b> — each extracted field gets a confidence % (green = high, orange = medium, red = low). Low-confidence fields are highlighted for manual correction.</li>
+      <li><b>OE2 Integration</b> — approved invoices are directly linked to existing OE2 jobs/paint cost records.</li>
+    </ul>
+  </div>
+  <div class="wf-box">
+    <div class="wf-title">⚙️ End-to-End Processing Flow</div>
+    <div class="wf-body">
+      <div class="wf-steps">
+        <div class="wstep">
+          <div class="wstep-num">1</div>
+          <div class="wstep-icon">📁</div>
+          <div class="wstep-title">Folder Monitor</div>
+          <div class="wstep-desc">Windows Service watches input folder every N minutes for new invoice files</div>
+          <div class="wstep-arrow">›</div>
+        </div>
+        <div class="wstep">
+          <div class="wstep-num">2</div>
+          <div class="wstep-icon">🔍</div>
+          <div class="wstep-title">File Detection</div>
+          <div class="wstep-desc">New PDF/JPG/PNG files detected, added to queue with status: Pending</div>
+          <div class="wstep-arrow">›</div>
+        </div>
+        <div class="wstep">
+          <div class="wstep-num">3</div>
+          <div class="wstep-icon">🤖</div>
+          <div class="wstep-title">OCR Processing</div>
+          <div class="wstep-desc">OCR engine extracts invoice fields with confidence scores per field</div>
+          <div class="wstep-arrow">›</div>
+        </div>
+        <div class="wstep">
+          <div class="wstep-num">4</div>
+          <div class="wstep-icon">👁️</div>
+          <div class="wstep-title">Review Queue</div>
+          <div class="wstep-desc">Low confidence → Manual Review Required. High confidence → auto-queued for approval</div>
+          <div class="wstep-arrow">›</div>
+        </div>
+        <div class="wstep">
+          <div class="wstep-num">5</div>
+          <div class="wstep-icon">✅</div>
+          <div class="wstep-title">User Approves</div>
+          <div class="wstep-desc">User verifies/corrects data, clicks Approve to push to OE2</div>
+          <div class="wstep-arrow">›</div>
+        </div>
+        <div class="wstep">
+          <div class="wstep-num">6</div>
+          <div class="wstep-icon">🏗️</div>
+          <div class="wstep-title">OE2 Integration</div>
+          <div class="wstep-desc">Invoice linked to Paint Cost job. File moved to Completed folder</div>
+        </div>
+      </div>
+      <div class="wf-rules">
+        <div class="wrule">
+          <h5>📊 OCR Confidence Rules</h5>
+          <ul>
+            <li><b>85%+</b> → High (green) — auto-queue</li>
+            <li><b>50–84%</b> → Medium (orange) — review flagged</li>
+            <li><b>Below 50%</b> → Low (red) — manual required</li>
+            <li>Any low field → whole invoice → Manual Review</li>
+          </ul>
+        </div>
+        <div class="wrule">
+          <h5>📁 Folder Movement Rules</h5>
+          <ul>
+            <li>Success → moved to <b>Completed</b> folder</li>
+            <li>OCR Fail → moved to <b>Failed/Error</b> folder</li>
+            <li>Original filename preserved with timestamp</li>
+            <li>Duplicate filenames get suffix: _001, _002</li>
+          </ul>
+        </div>
+        <div class="wrule">
+          <h5>🔧 Windows Service Rules</h5>
+          <ul>
+            <li>Runs as a background Windows Service</li>
+            <li>Configurable scan interval (default: 5 min)</li>
+            <li>Auto-restarts on failure</li>
+            <li>Logs all activity to DB + log files</li>
+          </ul>
+        </div>
+        <div class="wrule">
+          <h5>🔗 OE2 Integration Rules</h5>
+          <ul>
+            <li>Invoice links to OE2 Job via <b>AP Number</b></li>
+            <li>Total Paint Cost written to Paint Cost module</li>
+            <li>Approved invoices are <b>read-only</b> in OCR module</li>
+            <li>Bulk approval supported (multiple invoices at once)</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Vendor Format Analysis Table -->
+      <div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:10px;">🏢 Supported Vendor Invoice Formats — OCR Field Label Mapping</div>
+        <div style="font-size:11px;color:#555;margin-bottom:8px;">These are the 6 actual vendor invoices received by Albert Pearlman. Each vendor uses different field labels for the same data — the OCR engine must recognize all variants.</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead>
+              <tr style="background:#1e3a5f;color:#fff;">
+                <th style="padding:6px 10px;text-align:left;white-space:nowrap;">Vendor</th>
+                <th style="padding:6px 10px;text-align:left;">Invoice # Label</th>
+                <th style="padding:6px 10px;text-align:left;">Date Label</th>
+                <th style="padding:6px 10px;text-align:left;color:#ffd54f;">AP/PO # Label ⚠</th>
+                <th style="padding:6px 10px;text-align:left;">Total Label</th>
+                <th style="padding:6px 10px;text-align:left;">Extra Charges</th>
+                <th style="padding:6px 10px;text-align:left;">System</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #e2e8f0;background:#fafafa;">
+                <td style="padding:6px 10px;font-weight:bold;">Deluxe Paint &amp; Chemical</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Invoice#"</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Date" (header col)</td>
+                <td style="padding:6px 10px;font-weight:bold;color:#c62828;font-family:monospace;">"RO No." → e.g. AP76150/Daren</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Total"</td>
+                <td style="padding:6px 10px;color:#666;">Sale Amount, Misc Charge, Fuel Surcharge, PaintCare Fee, Sales Tax</td>
+                <td style="padding:6px 10px;"><span style="background:#e3f2fd;padding:1px 5px;border-radius:3px;font-size:10px;">Custom</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:6px 10px;font-weight:bold;">Eastern Paint Industries</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Invoice XXXX" (in heading)</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#e65100;">"By: Name Date Time" — parse date from text</td>
+                <td style="padding:6px 10px;font-weight:bold;color:#c62828;font-family:monospace;">"PO:" → numeric only e.g. 76656</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Total" + heading shows Total</td>
+                <td style="padding:6px 10px;color:#666;">Subtotal, Sales tax (0), items marked non-taxable</td>
+                <td style="padding:6px 10px;"><span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;font-size:10px;">Rundoo POS</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;background:#fafafa;">
+                <td style="padding:6px 10px;font-weight:bold;">Janovic Paint &amp; Decorating</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"INVOICE: XXXXXX/N"</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"DATE / TIME" column</td>
+                <td style="padding:6px 10px;font-weight:bold;color:#c62828;font-family:monospace;">"PURCHASE ORDER:" → e.g. 76369</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"TOTAL"</td>
+                <td style="padding:6px 10px;color:#666;">Taxable, Non-Taxable, Subtotal, Tax Amount, Total</td>
+                <td style="padding:6px 10px;"><span style="background:#f3e5f5;padding:1px 5px;border-radius:3px;font-size:10px;">XPhone POS</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:6px 10px;font-weight:bold;">Merit Kaplan Paint Supply</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Number" (in header box)</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Date" (in header box)</td>
+                <td style="padding:6px 10px;font-weight:bold;color:#c62828;font-family:monospace;">"PO Number:" → e.g. 76390</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Total"</td>
+                <td style="padding:6px 10px;color:#666;">SubTotal, Sales Tax, Taxable Eco Fees, Total, Account Charges</td>
+                <td style="padding:6px 10px;"><span style="background:#fff3e0;padding:1px 5px;border-radius:3px;font-size:10px;">Custom</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;background:#fafafa;">
+                <td style="padding:6px 10px;font-weight:bold;">Sherwin-Williams</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"No. XXXXXXXXXXXXXXX" (long number)</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"DATE: MM/DD/YYYY"</td>
+                <td style="padding:6px 10px;font-weight:bold;color:#c62828;font-family:monospace;">"PO#" → "AP76228/7 WEST 34TH" — extract AP# only</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#e65100;font-weight:bold;">"CHARGE" (not "Total"!) ⚠</td>
+                <td style="padding:6px 10px;color:#666;">Subtotal Before Tax, 8.875% Sales Tax, Charge (=Total). Multi-page PDF.</td>
+                <td style="padding:6px 10px;"><span style="background:#fce4ec;padding:1px 5px;border-radius:3px;font-size:10px;">SW Proprietary</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:6px 10px;font-weight:bold;">Aboff's Paints</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Invoice XXXX" (in heading)</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#e65100;">"By: Name Date Time" — parse date from text</td>
+                <td style="padding:6px 10px;font-weight:bold;color:#c62828;font-family:monospace;">"PO:" → numeric e.g. 76743 (also in "Job:" field)</td>
+                <td style="padding:6px 10px;font-family:monospace;color:#1565c0;">"Total"</td>
+                <td style="padding:6px 10px;color:#666;">Subtotal, Fuel Surcharge 2.5%, NY Eco Fee $0.95/gal, Sales tax, Total</td>
+                <td style="padding:6px 10px;"><span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;font-size:10px;">Rundoo POS</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;">
+          <div style="background:#ffebee;border:1px solid #ffcdd2;border-radius:3px;padding:7px 10px;font-size:11px;">
+            <b style="color:#c62828;">⚠ Critical OCR Challenge: AP/PO Number</b><br/>Every vendor labels the PO field differently: "RO No.", "PO:", "PURCHASE ORDER:", "PO Number:", "PO#". Sherwin-Williams embeds it as "AP76228/7 WEST 34TH" — OCR must strip the AP prefix and trailing text. This field requires highest verification priority.
+          </div>
+          <div style="background:#fff3e0;border:1px solid #ffe0b2;border-radius:3px;padding:7px 10px;font-size:11px;">
+            <b style="color:#e65100;">⚠ Critical OCR Challenge: Invoice Total</b><br/>Sherwin-Williams uses "CHARGE" instead of "Total". Aboff's and Eastern show a "Total" in the page header. Merit uses "Account Charges" as the final payable amount. OCR must map all these to the single Total Paint Cost field.
+          </div>
+          <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:3px;padding:7px 10px;font-size:11px;">
+            <b style="color:#1565c0;">ℹ Date Extraction</b><br/>Eastern and Aboff's (both Rundoo POS) embed the date inside "By: Name Date Time" text — e.g., "By: Danielle May 18, 2026 9:05am". OCR must parse the date from this string rather than a labeled field.
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 1 — DASHBOARD
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 1 — Dashboard</div>
+  <div class="doc-desc">
+    <h4>What this screen shows</h4>
+    <p>The main landing screen for the Invoice OCR module. At a glance you can see: how many invoices were processed today, how many need attention, whether the Windows Service is running, and a 7-day processing trend. The service status bar at the top turns red if the Windows Service stops — this is the first sign something needs attention.</p>
+    <ul>
+      <li><b>6 stat cards</b> — Processed Today, Pending, Processing, Failed, Review Required, OCR Success Rate</li>
+      <li><b>Service Status Bar</b> — Live status: Windows Service, Folder Monitor, last scan time, next scan countdown</li>
+      <li><b>7-Day Chart</b> — Invoices processed vs. failed per day (last 7 days)</li>
+      <li><b>Recent Activity</b> — Last 10 invoices with status and quick action links</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo">
+      <span>User: <b>Mark Klein</b></span>
+      <span>Role: Admin</span>
+      <span><a href="#">Logout</a></span>
+    </div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div>
+    <div class="oe2-tab">Proposals</div>
+    <div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div>
+    <div class="oe2-tab">Reports</div>
+    <div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">📊</div>
+    <div class="oe2-banner-label">Invoice OCR — Dashboard</div>
+    <div class="oe2-banner-sub">Today: Friday, May 23, 2026 &nbsp;|&nbsp; Last Refresh: 2:14 PM</div>
+  </div>
+  <div class="ocr-layout">
+    <!-- Sidebar -->
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <!-- Main -->
+    <div class="ocr-main">
+      <!-- Service Status Bar -->
+      <div class="svc-bar">
+        <div class="svc-item"><span class="svc-dot g"></span> <b>Windows Service</b>: Running</div>
+        <div class="svc-item"><span class="svc-dot g"></span> <b>Folder Monitor</b>: Active</div>
+        <div class="svc-item">📁 <b>Input Folder</b>: \\Server\Invoices\Incoming</div>
+        <div class="svc-item">⏱️ <b>Last Scan</b>: 2:12 PM (2 min ago)</div>
+        <div class="svc-item">⏭️ <b>Next Scan</b>: 2:17 PM (in 3 min)</div>
+        <div class="svc-bar-right"><span class="oe2-badge b-running">● LIVE</span></div>
+      </div>
+      <!-- Stat Cards -->
+      <div class="stat-cards">
+        <div class="stat-card sc1"><div class="sc-icon">📄</div><div class="sc-num">142</div><div class="sc-label">Processed Today</div><div class="sc-delta up">↑ +18 from yesterday</div></div>
+        <div class="stat-card sc2"><div class="sc-icon">⏳</div><div class="sc-num">8</div><div class="sc-label">Pending</div><div class="sc-delta">In queue, awaiting OCR</div></div>
+        <div class="stat-card sc6"><div class="sc-icon">⚙️</div><div class="sc-num">3</div><div class="sc-label">Processing Now</div><div class="sc-delta">OCR engine active</div></div>
+        <div class="stat-card sc3"><div class="sc-icon">❌</div><div class="sc-num">2</div><div class="sc-label">Failed Today</div><div class="sc-delta dn">↑ +1 from yesterday</div></div>
+        <div class="stat-card sc4"><div class="sc-icon">🔍</div><div class="sc-num">5</div><div class="sc-label">Review Required</div><div class="sc-delta">Low confidence fields</div></div>
+        <div class="stat-card sc5"><div class="sc-icon">✅</div><div class="sc-num">94%</div><div class="sc-label">OCR Success Rate</div><div class="sc-delta up">↑ +2% this week</div></div>
+      </div>
+      <!-- Two col: Chart + Recent -->
+      <div class="two-col">
+        <!-- Chart -->
+        <div class="col-card">
+          <div class="col-card-hdr">📈 7-Day Processing Volume <span class="muted">May 17 – 23</span></div>
+          <div class="col-card-body">
+            <div class="bar-chart" style="height:90px;align-items:flex-end;gap:10px;display:flex;border-bottom:1px solid #e0e0e0;padding-bottom:4px;">
+              <div class="bc"><div class="bf bf-blue" style="height:55px;"></div><div class="bc-lbl">May 17</div></div>
+              <div class="bc"><div class="bf bf-blue" style="height:70px;"></div><div class="bc-lbl">May 18</div></div>
+              <div class="bc"><div class="bf bf-blue" style="height:48px;"></div><div class="bc-lbl">May 19</div></div>
+              <div class="bc"><div class="bf bf-blue" style="height:82px;"></div><div class="bc-lbl">May 20</div></div>
+              <div class="bc"><div class="bf bf-blue" style="height:63px;"></div><div class="bc-lbl">May 21</div></div>
+              <div class="bc"><div class="bf bf-blue" style="height:90px;"></div><div class="bc-lbl">May 22</div></div>
+              <div class="bc"><div class="bf bf-green" style="height:75px;"></div><div class="bc-lbl">Today</div></div>
+            </div>
+            <div style="display:flex;gap:14px;margin-top:8px;font-size:10px;color:#555;">
+              <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#4a90d9;display:inline-block;border-radius:2px;"></span>Processed</span>
+              <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#43a047;display:inline-block;border-radius:2px;"></span>Today</span>
+            </div>
+            <!-- OCR Rate row -->
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid #eee;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:11px;font-weight:bold;color:#333;">Overall OCR Success Rate</span>
+                <span style="font-size:13px;font-weight:bold;color:#2e7d32;">94%</span>
+              </div>
+              <div class="conf-bar" style="height:8px;"><div class="conf-fill cf-hi" style="width:94%;height:100%;"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:4px;"><span>0%</span><span>50%</span><span>100%</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Recent Activity -->
+        <div class="col-card">
+          <div class="col-card-hdr">🕐 Recent Invoices <a href="#" style="font-size:11px;color:#4a90d9;font-weight:normal;">View All →</a></div>
+          <div style="overflow-x:auto;">
+            <table class="oe2-grid">
+              <thead><tr>
+                <th>File</th><th>Vendor</th><th>Status</th><th>Conf.</th><th style="width:50px;">Action</th>
+              </tr></thead>
+              <tbody>
+                <tr><td><a class="lnk">INV-2890.pdf</a></td><td>Sherwin Williams</td><td><span class="oe2-badge b-completed">Completed</span></td><td><span class="conf-pct hi">96%</span></td><td style="font-size:11px;"><a class="lnk">View</a></td></tr>
+                <tr><td><a class="lnk">INV-2889.pdf</a></td><td>Benjamin Moore</td><td><span class="oe2-badge b-review">Review</span></td><td><span class="conf-pct mi">67%</span></td><td style="font-size:11px;"><a class="lnk">Review</a></td></tr>
+                <tr><td><a class="lnk">scan_0423.jpg</a></td><td>Pratt &amp; Lambert</td><td><span class="oe2-badge b-completed">Completed</span></td><td><span class="conf-pct hi">91%</span></td><td style="font-size:11px;"><a class="lnk">View</a></td></tr>
+                <tr><td><a class="lnk">INV-2888.pdf</a></td><td>PPG Paints</td><td><span class="oe2-badge b-failed">Failed</span></td><td><span class="conf-pct lo">22%</span></td><td style="font-size:11px;"><a class="lnk">Retry</a></td></tr>
+                <tr><td><a class="lnk">invoice_may.pdf</a></td><td>Rust-Oleum</td><td><span class="oe2-badge b-processing">Processing</span></td><td><span class="muted">—</span></td><td style="font-size:11px;"><a class="lnk">View</a></td></tr>
+                <tr><td><a class="lnk">INV-2887.pdf</a></td><td>Sherwin Williams</td><td><span class="oe2-badge b-approved">Approved</span></td><td><span class="conf-pct hi">88%</span></td><td style="font-size:11px;"><a class="lnk">View</a></td></tr>
+                <tr><td><a class="lnk">INV-2886.jpg</a></td><td>Benjamin Moore</td><td><span class="oe2-badge b-completed">Completed</span></td><td><span class="conf-pct hi">93%</span></td><td style="font-size:11px;"><a class="lnk">View</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- Quick Actions -->
+      <div style="display:flex;gap:8px;padding:10px 14px;background:#f8f8f8;border-top:1px solid #eee;">
+        <button class="oe2-btn btn-blue">📋 View Queue</button>
+        <button class="oe2-btn btn-orange">🔍 Manual Review (5)</button>
+        <button class="oe2-btn btn-white">📁 Open Input Folder</button>
+        <button class="oe2-btn btn-white">🔄 Trigger Scan Now</button>
+        <button class="oe2-btn btn-gray" style="margin-left:auto;">⚙️ Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 2 — FOLDER MONITORING CONFIGURATION
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 2 — Folder Monitoring Configuration</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>Administrators configure the folder paths and scanning behavior of the Windows Service here. Changes take effect after clicking Save — the service picks up the new settings without a restart. The <b>Test Connection</b> button verifies all three folder paths are accessible on the network before saving.</p>
+    <ul>
+      <li><b>Input Folder</b> — where users (or a scanner/email system) drop new invoice files</li>
+      <li><b>Completed Folder</b> — successfully processed invoices are moved here automatically</li>
+      <li><b>Failed Folder</b> — invoices that could not be OCR-processed are moved here for manual handling</li>
+      <li><b>Scan Interval</b> — how often the service checks the input folder (minimum: 1 minute)</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">📁</div>
+    <div class="oe2-banner-label">Invoice OCR — Folder Monitoring Configuration</div>
+    <div class="oe2-banner-sub">Admin — Configuration</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Configuration</a><span class="sep">›</span>Folder Monitoring</div>
+      <div class="ocr-form-area">
+        <!-- Folder Paths -->
+        <div class="form-section">
+          <div class="form-section-hdr">📁 Folder Path Configuration <span style="font-size:11px;font-weight:normal;color:#888;">All paths must be accessible by the Windows Service account</span></div>
+          <div class="form-body">
+            <div class="f-row">
+              <label>Input Folder Path <span style="color:#c62828">*</span></label>
+              <div class="path-widget" style="flex:1;max-width:480px;">
+                <input class="f-inp" type="text" value="\\Server01\Invoices\Incoming" style="flex:1;border-radius:3px 0 0 3px;"/>
+                <div class="browse">📂 Browse</div>
+              </div>
+              <button class="oe2-btn btn-white" style="font-size:11px;">🔗 Test</button>
+              <span class="oe2-badge b-running" style="font-size:10px;">✓ Accessible</span>
+            </div>
+            <div class="f-row">
+              <label>Completed Folder Path <span style="color:#c62828">*</span></label>
+              <div class="path-widget" style="flex:1;max-width:480px;">
+                <input class="f-inp" type="text" value="\\Server01\Invoices\Completed" style="flex:1;border-radius:3px 0 0 3px;"/>
+                <div class="browse">📂 Browse</div>
+              </div>
+              <button class="oe2-btn btn-white" style="font-size:11px;">🔗 Test</button>
+              <span class="oe2-badge b-running" style="font-size:10px;">✓ Accessible</span>
+            </div>
+            <div class="f-row">
+              <label>Failed / Error Folder <span style="color:#c62828">*</span></label>
+              <div class="path-widget" style="flex:1;max-width:480px;">
+                <input class="f-inp" type="text" value="\\Server01\Invoices\Failed" style="flex:1;border-radius:3px 0 0 3px;"/>
+                <div class="browse">📂 Browse</div>
+              </div>
+              <button class="oe2-btn btn-white" style="font-size:11px;">🔗 Test</button>
+              <span class="oe2-badge b-running" style="font-size:10px;">✓ Accessible</span>
+            </div>
+          </div>
+        </div>
+        <!-- File Types & Scan Settings -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-section">
+            <div class="form-section-hdr">📄 Supported File Types</div>
+            <div class="form-body">
+              <div class="f-row"><div class="chk-group">
+                <label class="chk-item"><input type="checkbox" checked> PDF</label>
+                <label class="chk-item"><input type="checkbox" checked> JPG / JPEG</label>
+                <label class="chk-item"><input type="checkbox" checked> PNG</label>
+                <label class="chk-item"><input type="checkbox"> TIFF</label>
+                <label class="chk-item"><input type="checkbox"> BMP</label>
+              </div></div>
+              <div class="f-row"><label>Max File Size</label><input class="f-inp w80" type="text" value="25"/> <span class="muted">MB per file</span></div>
+              <div class="f-row"><label>Min File Size</label><input class="f-inp w80" type="text" value="10"/> <span class="muted">KB (ignore smaller)</span></div>
+              <div class="f-row"><label>Include Subfolders</label>
+                <label class="toggle"><input type="checkbox"><span class="slider"></span></label>
+                <span class="muted" style="margin-left:6px;">Off — top-level only</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-hdr">⏱️ Scan & Processing Settings</div>
+            <div class="form-body">
+              <div class="f-row"><label>Auto Scan Enabled</label>
+                <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+                <span class="toggle-label on" style="margin-left:6px;">ON</span>
+              </div>
+              <div class="f-row"><label>Scan Interval</label><input class="f-inp w80" type="text" value="5"/> <select class="f-sel w120"><option selected>Minutes</option><option>Hours</option></select></div>
+              <div class="f-row"><label>Concurrent Jobs</label><input class="f-inp w80" type="text" value="3"/> <span class="muted">files processed at once</span></div>
+              <div class="f-row"><label>Retry Failed After</label><input class="f-inp w80" type="text" value="30"/> <span class="muted">minutes (0 = no retry)</span></div>
+              <div class="f-row"><label>Max Retries</label><input class="f-inp w80" type="text" value="3"/> <span class="muted">attempts per file</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- OCR Engine -->
+        <div class="form-section">
+          <div class="form-section-hdr">🤖 OCR Engine Selection</div>
+          <div class="form-body">
+            <div class="f-row"><label>OCR Provider <span style="color:#c62828">*</span></label>
+              <select class="f-sel w200"><option>Tesseract (Local — Free)</option><option selected>Azure Cognitive Services</option><option>AWS Textract</option><option>Google Vision AI</option></select>
+              <span class="oe2-badge b-approved" style="margin-left:8px;">Connected</span>
+            </div>
+            <div class="info-box">ℹ️ <b>Azure Cognitive Services</b> is selected. Ensure the API key is configured in <a href="#" style="color:#1565c0;">OCR Settings</a>. Usage charges apply per page processed.</div>
+          </div>
+        </div>
+        <!-- Action Buttons -->
+        <div style="display:flex;gap:8px;padding:8px 0;">
+          <button class="oe2-btn btn-green">💾 Save Configuration</button>
+          <button class="oe2-btn btn-blue">🔗 Test All Connections</button>
+          <button class="oe2-btn btn-white">🔄 Restart Service</button>
+          <button class="oe2-btn btn-white" style="margin-left:auto;">✕ Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 3 — INVOICE PROCESSING QUEUE
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 3 — Invoice Processing Queue</div>
+  <div class="doc-desc">
+    <h4>What this screen shows</h4>
+    <p>All invoice files detected from the monitored folder appear here. Each row shows the file name, when it was detected, its current processing status, OCR confidence score, page count, and available actions. Use the status tabs to quickly filter by what needs attention. The <b>Review Required</b> tab is the most important — those are invoices that need a human to verify the extracted data before they can be approved.</p>
+    <ul>
+      <li><b>Retry</b> — re-runs OCR on a failed invoice (useful after service configuration changes)</li>
+      <li><b>Preview</b> — opens the Invoice Viewer side-by-side with the extracted data</li>
+      <li><b>Review</b> — opens the Invoice Detail screen to correct low-confidence fields</li>
+      <li>Confidence shown as color-coded percentage: <span style="color:#2e7d32;font-weight:bold;">green=high</span>, <span style="color:#e65100;font-weight:bold;">orange=medium</span>, <span style="color:#c62828;font-weight:bold;">red=low</span></li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">📋</div>
+    <div class="oe2-banner-label">Invoice OCR — Processing Queue</div>
+    <div class="oe2-banner-sub">42 total invoices &nbsp;|&nbsp; 11 need attention</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <!-- Toolbar -->
+      <div class="ocr-toolbar">
+        <button class="oe2-btn btn-blue">🔄 Refresh</button>
+        <button class="oe2-btn btn-orange">▶ Process Pending (8)</button>
+        <button class="oe2-btn btn-white">↺ Retry Failed</button>
+        <div class="btn-sep"></div>
+        <button class="oe2-btn btn-green">✅ Bulk Approve Selected</button>
+        <button class="oe2-btn btn-red">🗑️ Delete Selected</button>
+        <div style="margin-left:auto;font-size:11px;color:#888;">Auto-refresh: <b>30s</b></div>
+      </div>
+      <!-- Search Bar -->
+      <div class="ocr-search-bar">
+        <input class="f-input w180" type="text" placeholder="🔍 Search file name / vendor…"/>
+        <select class="f-select w130"><option>All Confidence</option><option>High (85%+)</option><option>Medium (50–84%)</option><option>Low (&lt;50%)</option></select>
+        <input class="f-input w120" type="date" value="2026-05-23" title="From Date"/>
+        <span class="muted">to</span>
+        <input class="f-input w120" type="date" value="2026-05-23" title="To Date"/>
+        <button class="oe2-btn btn-blue">Search</button>
+        <button class="oe2-btn btn-white">Clear</button>
+      </div>
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="st-tab">All <span class="n">42</span></div>
+        <div class="st-tab active">Pending <span class="n">8</span></div>
+        <div class="st-tab">Processing <span class="n">3</span></div>
+        <div class="st-tab">Completed <span class="n">24</span></div>
+        <div class="st-tab">Failed <span class="n">2</span></div>
+        <div class="st-tab">Review Required <span class="n">5</span></div>
+      </div>
+      <div style="height:1px;background:#e0e0e0;"></div>
+      <!-- Grid -->
+      <div class="grid-area" style="padding-top:10px;">
+        <table class="oe2-grid">
+          <thead><tr>
+            <th><input type="checkbox" class="chk"/></th>
+            <th>File Name</th>
+            <th>Detected At</th>
+            <th>Status</th>
+            <th>OCR Confidence</th>
+            <th class="center">Pages</th>
+            <th>Vendor (Guessed)</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">INV-2891.pdf</a></td>
+              <td>05/23/2026 2:10 PM</td>
+              <td><span class="oe2-badge b-pending">⏳ Pending</span></td>
+              <td><span class="muted">—</span></td>
+              <td class="center">3</td><td><span class="muted">Not yet</span></td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-blue" style="font-size:11px;">▶ Process</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">INV-2890.pdf</a></td>
+              <td>05/23/2026 1:55 PM</td>
+              <td><span class="oe2-badge b-processing">⚙️ Processing</span></td>
+              <td>
+                <div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-fill cf-hi" style="width:78%;"></div></div><span class="conf-pct hi">78%</span></div>
+              </td>
+              <td class="center">2</td><td>Sherwin Williams</td>
+              <td><button class="oe2-btn btn-white" style="font-size:11px;">👁 Preview</button></td>
+            </tr>
+            <tr style="background:#fff5f5;">
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">scan_broken.jpg</a></td>
+              <td>05/23/2026 11:30 AM</td>
+              <td><span class="oe2-badge b-failed">❌ Failed</span></td>
+              <td><span class="conf-pct lo">18%</span></td>
+              <td class="center">1</td><td><span class="muted">Unknown</span></td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-white" style="font-size:11px;">↺ Retry</button> <button class="oe2-btn btn-white" style="font-size:11px;">✏️ Manual</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">INV-2889.pdf</a></td>
+              <td>05/23/2026 10:15 AM</td>
+              <td><span class="oe2-badge b-review">🔍 Review Reqd</span></td>
+              <td>
+                <div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-fill cf-mi" style="width:67%;"></div></div><span class="conf-pct mi">67%</span></div>
+              </td>
+              <td class="center">4</td><td>Benjamin Moore</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-orange" style="font-size:11px;">🔍 Review</button> <button class="oe2-btn btn-white" style="font-size:11px;">👁 View</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">INV-2888.pdf</a></td>
+              <td>05/23/2026 9:02 AM</td>
+              <td><span class="oe2-badge b-completed">✅ Completed</span></td>
+              <td>
+                <div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-fill cf-hi" style="width:96%;"></div></div><span class="conf-pct hi">96%</span></div>
+              </td>
+              <td class="center">1</td><td>PPG Paints</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-green" style="font-size:11px;">✅ Approve</button> <button class="oe2-btn btn-white" style="font-size:11px;">👁 View</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">INV-2887.pdf</a></td>
+              <td>05/22/2026 4:45 PM</td>
+              <td><span class="oe2-badge b-approved">✓ Approved</span></td>
+              <td>
+                <div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-fill cf-hi" style="width:91%;"></div></div><span class="conf-pct hi">91%</span></div>
+              </td>
+              <td class="center">2</td><td>Sherwin Williams</td>
+              <td><button class="oe2-btn btn-white" style="font-size:11px;">👁 View</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">may_invoice_ruste.pdf</a></td>
+              <td>05/22/2026 3:30 PM</td>
+              <td><span class="oe2-badge b-review">🔍 Review Reqd</span></td>
+              <td>
+                <div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-fill cf-mi" style="width:55%;"></div></div><span class="conf-pct mi">55%</span></div>
+              </td>
+              <td class="center">5</td><td>Rust-Oleum</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-orange" style="font-size:11px;">🔍 Review</button> <button class="oe2-btn btn-white" style="font-size:11px;">👁 View</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <div class="pg-btn">‹</div>
+        <div class="pg-btn active">1</div>
+        <div class="pg-btn">2</div>
+        <div class="pg-btn">3</div>
+        <div class="pg-btn">›</div>
+        <div class="pg-info">Showing 1–7 of 42 records &nbsp;|&nbsp; <select class="f-select" style="height:22px;font-size:11px;"><option>10 per page</option><option>25</option><option>50</option></select></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 4 — OE2 INVOICE MANAGEMENT
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 4 — OE2 Invoice Management</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>This is the main list of all invoices that have been successfully processed by OCR and are ready to be linked into the OE2 Paint Cost module. From here, users select one or more invoices, review their details, and click <b>Add to Paint Cost</b> to push the data into the appropriate OE2 job. Bulk selection allows approving multiple invoices at once.</p>
+    <ul>
+      <li><b>Add to Paint Cost</b> — links the invoice's Total Paint Cost and AP Number to the matching OE2 job</li>
+      <li><b>Approve</b> — marks invoice as verified/approved without immediately linking to Paint Cost</li>
+      <li><b>Edit</b> — opens the Invoice Detail screen to modify extracted fields before approval</li>
+      <li>Invoices remain here until explicitly deleted or archived — you can always reference past invoices</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">📄</div>
+    <div class="oe2-banner-label">Invoice OCR — OE2 Invoice Management</div>
+    <div class="oe2-banner-sub">136 invoices &nbsp;|&nbsp; 12 pending approval</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <!-- Toolbar -->
+      <div class="ocr-toolbar">
+        <button class="oe2-btn btn-green">🏗️ Add to Paint Cost</button>
+        <button class="oe2-btn btn-blue">✅ Approve Selected</button>
+        <div class="btn-sep"></div>
+        <button class="oe2-btn btn-white">✏️ Edit</button>
+        <button class="oe2-btn btn-red">🗑️ Delete</button>
+        <button class="oe2-btn btn-gray">📤 Export CSV</button>
+        <div style="margin-left:auto;font-size:11px;color:#888;"><b>2</b> selected</div>
+      </div>
+      <!-- Search -->
+      <div class="ocr-search-bar">
+        <input class="f-input w180" type="text" placeholder="🔍 Search vendor / invoice# / AP#…"/>
+        <select class="f-select w130"><option>All Statuses</option><option>Pending Approval</option><option>Approved</option><option>Linked to Job</option></select>
+        <select class="f-select w130"><option>All Vendors</option><option>Sherwin-Williams</option><option>Deluxe Paint &amp; Chemical</option><option>Merit Kaplan Paint</option><option>Eastern Paint Industries</option><option>Janovic Paint</option><option>Aboff's Paints</option></select>
+        <input class="f-input w120" type="date" value="2026-05-01"/>
+        <span class="muted">to</span>
+        <input class="f-input w120" type="date" value="2026-05-23"/>
+        <button class="oe2-btn btn-blue">Search</button>
+        <button class="oe2-btn btn-white">Clear</button>
+      </div>
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="st-tab">All <span class="n">136</span></div>
+        <div class="st-tab active">Pending Approval <span class="n">12</span></div>
+        <div class="st-tab">Approved <span class="n">89</span></div>
+        <div class="st-tab">Linked to Paint Cost <span class="n">35</span></div>
+      </div>
+      <div style="height:1px;background:#e0e0e0;"></div>
+      <!-- Grid -->
+      <div class="grid-area" style="padding-top:8px;">
+        <table class="oe2-grid">
+          <thead><tr>
+            <th><input type="checkbox" class="chk"/></th>
+            <th>Vendor Name</th>
+            <th>Invoice #</th>
+            <th>Invoice Date</th>
+            <th>Total Amount</th>
+            <th>Customer</th>
+            <th>AP Number</th>
+            <th>Status</th>
+            <th>OCR Conf.</th>
+            <th>Added</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody>
+            <tr style="background:#f0fff4;">
+              <td><input type="checkbox" class="chk" checked/></td>
+              <td><a class="lnk">Sherwin-Williams</a><div class="muted" style="font-size:10px;">Long Island City NY</div></td>
+              <td>99940218490526<div class="muted" style="font-size:10px;">CHARGE INVOICE</div></td>
+              <td>05/20/2026</td>
+              <td><b>$678.72</b></td>
+              <td>7 West 34th St</td>
+              <td><span class="bold text-blue">76228.00</span><div class="muted" style="font-size:10px;">from PO# AP76228</div></td>
+              <td><span class="oe2-badge b-pending">Pending</span></td>
+              <td><span class="conf-badge cb-hi">89%</span></td>
+              <td class="muted">Today</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-white" style="font-size:10px;">✏️ Edit</button> <button class="oe2-btn btn-white" style="font-size:10px;">👁 View</button></td>
+            </tr>
+            <tr style="background:#f0fff4;">
+              <td><input type="checkbox" class="chk" checked/></td>
+              <td><a class="lnk">Aboff's Paints</a><div class="muted" style="font-size:10px;">West Hempstead NY</div></td>
+              <td>R2PBT<div class="muted" style="font-size:10px;">Rundoo</div></td>
+              <td>05/19/2026</td>
+              <td><b>$176.86</b></td>
+              <td>4 WTC – Lobby</td>
+              <td><span class="bold text-blue">76743.00</span><div class="muted" style="font-size:10px;">from PO: 76743</div></td>
+              <td><span class="oe2-badge b-pending">Pending</span></td>
+              <td><span class="conf-badge cb-mi">74%</span></td>
+              <td class="muted">Today</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-white" style="font-size:10px;">✏️ Edit</button> <button class="oe2-btn btn-white" style="font-size:10px;">👁 View</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">Merit Kaplan Paint</a><div class="muted" style="font-size:10px;">237 E 44th St, NY</div></td>
+              <td>00411098<div class="muted" style="font-size:10px;">Invoice</div></td>
+              <td>05/18/2026</td>
+              <td><b>$217.53</b></td>
+              <td>200 Park Ave – 52nd</td>
+              <td><span class="bold text-blue">76390.00</span><div class="muted" style="font-size:10px;">from PO Number: 76390</div></td>
+              <td><span class="oe2-badge b-approved">Approved</span></td>
+              <td><span class="conf-badge cb-hi">92%</span></td>
+              <td class="muted">Yesterday</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-green" style="font-size:10px;">🏗️ Add to Job</button> <button class="oe2-btn btn-white" style="font-size:10px;">👁 View</button></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">Eastern Paint Industries</a><div class="muted" style="font-size:10px;">1851 Flatbush Ave, Brooklyn</div></td>
+              <td>6HNDU<div class="muted" style="font-size:10px;">Rundoo</div></td>
+              <td>05/18/2026</td>
+              <td><b>$471.19</b></td>
+              <td>17 State St (Basement)</td>
+              <td><span class="bold text-blue">76656.00</span><div class="muted" style="font-size:10px;">from PO: 76656</div></td>
+              <td><span class="oe2-badge b-approved">Approved</span></td>
+              <td><span class="conf-badge cb-hi">87%</span></td>
+              <td class="muted">Yesterday</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-green" style="font-size:10px;">🏗️ Add to Job</button> <button class="oe2-btn btn-white" style="font-size:10px;">👁 View</button></td>
+            </tr>
+            <tr style="background:#f5f5f5;">
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">Deluxe Paint &amp; Chemical</a><div class="muted" style="font-size:10px;">605 4th Ave, Brooklyn</div></td>
+              <td>1-784814-01<div class="muted" style="font-size:10px;">Invoice</div></td>
+              <td>04/30/2026</td>
+              <td><b>$180.21</b></td>
+              <td>51 Astor Place 7th Fl</td>
+              <td><span class="bold text-blue">76150.00</span><div class="muted" style="font-size:10px;">from RO No: AP76150</div></td>
+              <td><span class="oe2-badge" style="background:#e8f5e9;color:#1b5e20;">✓ Linked</span></td>
+              <td><span class="conf-badge cb-mi">78%</span></td>
+              <td class="muted">May 20</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-white" style="font-size:10px;">👁 View</button></td>
+            </tr>
+            <tr style="background:#f5f5f5;">
+              <td><input type="checkbox" class="chk"/></td>
+              <td><a class="lnk">Janovic Paint &amp; Decorating</a><div class="muted" style="font-size:10px;">215 7th Ave, New York</div></td>
+              <td>172239/4<div class="muted" style="font-size:10px;">INVOICE</div></td>
+              <td>05/15/2026</td>
+              <td><b>$8.99</b></td>
+              <td>500 5th Ave</td>
+              <td><span class="bold text-blue">76369.00</span><div class="muted" style="font-size:10px;">from PURCHASE ORDER: 76369</div></td>
+              <td><span class="oe2-badge" style="background:#e8f5e9;color:#1b5e20;">✓ Linked</span></td>
+              <td><span class="conf-badge cb-hi">95%</span></td>
+              <td class="muted">May 18</td>
+              <td style="white-space:nowrap;"><button class="oe2-btn btn-white" style="font-size:10px;">👁 View</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Bottom selection bar -->
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#e3f2fd;border-top:1px solid #90caf9;font-size:12px;">
+        <span>📌 <b>2 invoices selected</b> &nbsp;|&nbsp; Total: <b>$10,405.50</b></span>
+        <button class="oe2-btn btn-green">🏗️ Add Selected to Paint Cost</button>
+        <button class="oe2-btn btn-blue">✅ Approve Selected</button>
+        <button class="oe2-btn btn-white" style="margin-left:auto;">✕ Clear Selection</button>
+      </div>
+      <div class="pagination">
+        <div class="pg-btn">‹</div><div class="pg-btn active">1</div><div class="pg-btn">2</div><div class="pg-btn">3</div><div class="pg-btn">›</div>
+        <div class="pg-info">Showing 1–6 of 136 records</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 5 — INVOICE DETAIL / EDIT
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 5 — Invoice Detail / Edit</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>The detailed view for a single invoice. Each field extracted by OCR is shown alongside its confidence score. Fields with low confidence (below 50%) are highlighted in red — these need manual correction before the invoice can be approved. Fields with medium confidence are shown in orange as a caution. After correcting any fields, click <b>Save &amp; Update</b> then <b>Approve</b>.</p>
+    <ul>
+      <li><b>Confidence badge beside each field</b> — instantly shows which fields need attention</li>
+      <li><b>Low confidence fields</b> are highlighted with a red border — don't skip these</li>
+      <li><b>Overall OCR Score</b> at the top shows the average confidence across all fields</li>
+      <li><b>Save &amp; Update</b> saves without approving (useful to save progress); <b>Approve</b> finalizes the invoice</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">✏️</div>
+    <div class="oe2-banner-label">Invoice Detail — BM-45901 &nbsp;/&nbsp; Benjamin Moore</div>
+    <div class="oe2-banner-sub">Review &amp; Correct OCR Data</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Invoice Management</a><span class="sep">›</span>Merit Kaplan — Invoice #00411098</div>
+      <!-- Overall OCR confidence bar -->
+      <div style="background:#e8f5e9;border-bottom:1px solid #c8e6c9;padding:8px 16px;display:flex;align-items:center;gap:14px;">
+        <span style="font-size:12px;font-weight:bold;color:#2e7d32;">✅ Overall OCR Confidence: 92% — High</span>
+        <div class="conf-bar" style="width:200px;height:8px;"><div class="conf-fill cf-hi" style="width:92%;height:100%;"></div></div>
+        <span style="font-size:11px;color:#777;">All fields extracted · File: MERIT INVOICE.pdf · Pages: 1 · Detected: 05/23/2026 9:02 AM · <b>Source label "PO Number:"</b></span>
+        <button class="oe2-btn btn-white" style="font-size:11px;margin-left:auto;">👁 View Original PDF</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 300px;min-height:540px;">
+        <!-- Left: Form + Line Items -->
+        <div style="border-right:1px solid #ddd;overflow-y:auto;">
+          <!-- Header Fields -->
+          <div style="padding:12px 16px 0;">
+            <div class="form-section">
+              <div class="form-section-hdr">📋 Invoice Header — Extracted Fields
+                <span style="font-size:10px;font-weight:normal;color:#888;">OCR source: Merit Kaplan Invoice format · PO label: "PO Number:"</span>
+              </div>
+              <div class="form-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;">
+                  <div>
+                    <div class="field-conf-row">
+                      <label>Vendor Name</label>
+                      <input class="f-inp hi-border" style="width:100%;max-width:220px;" type="text" value="Merit Kaplan Paint Supply"/>
+                      <span class="conf-tag conf-tag-hi">✓ 97%</span>
+                    </div>
+                    <div class="field-conf-row">
+                      <label>Invoice Number</label>
+                      <input class="f-inp hi-border" style="width:160px;" type="text" value="00411098"/>
+                      <span class="conf-tag conf-tag-hi">✓ 94%</span>
+                    </div>
+                    <div class="field-conf-row">
+                      <label>Invoice Date</label>
+                      <input class="f-inp hi-border" style="width:120px;" type="text" value="05/18/2026"/>
+                      <span class="conf-tag conf-tag-hi">✓ 91%</span>
+                    </div>
+                    <div class="field-conf-row">
+                      <label>Payment Terms</label>
+                      <input class="f-inp hi-border" style="width:140px;" type="text" value="Net 30 Days"/>
+                      <span class="conf-tag conf-tag-hi">✓ 88%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="field-conf-row">
+                      <label style="color:#c62828;font-weight:bold;">AP/PO Number ★</label>
+                      <input class="f-inp hi-border" style="width:140px;border-color:#4caf50;" type="text" value="76390"/>
+                      <span class="conf-tag conf-tag-hi">✓ 93%</span>
+                    </div>
+                    <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:3px;padding:5px 8px;font-size:10px;color:#2e7d32;margin:-4px 0 8px 0;">
+                      ✓ Extracted from <b>"PO Number: 76390"</b> label. Maps to OE2 Job <b>76390.00</b>.
+                    </div>
+                    <div class="field-conf-row">
+                      <label>Customer Code</label>
+                      <input class="f-inp hi-border" style="width:80px;" type="text" value="159"/>
+                      <span class="conf-tag conf-tag-hi">✓ 90%</span>
+                    </div>
+                    <div class="field-conf-row">
+                      <label>Ship To Address</label>
+                      <input class="f-inp hi-border" style="width:220px;" type="text" value="200 Park Ave - 52nd Floor, NY"/>
+                      <span class="conf-tag conf-tag-hi">✓ 86%</span>
+                    </div>
+                    <div class="field-conf-row">
+                      <label>Ordered By</label>
+                      <input class="f-inp hi-border" style="width:120px;" type="text" value="KISHOR"/>
+                      <span class="conf-tag conf-tag-hi">✓ 89%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Line Items -->
+            <div class="form-section">
+              <div class="form-section-hdr">📦 Extracted Line Items
+                <span style="font-size:10px;font-weight:normal;color:#888;">5 items detected · Columns: Item#, Description, Qty, U/M, Unit Price, Extension</span>
+              </div>
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                  <thead><tr style="background:#4a90d9;color:#fff;">
+                    <th style="padding:5px 8px;text-align:left;">Item #</th>
+                    <th style="padding:5px 8px;text-align:left;">Description</th>
+                    <th style="padding:5px 8px;text-align:center;">Qty</th>
+                    <th style="padding:5px 8px;text-align:center;">U/M</th>
+                    <th style="padding:5px 8px;text-align:right;">Unit Price</th>
+                    <th style="padding:5px 8px;text-align:right;">Amount</th>
+                    <th style="padding:5px 8px;text-align:center;width:50px;">Conf.</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr style="border-bottom:1px solid #eee;">
+                      <td style="padding:5px 8px;font-family:monospace;font-size:10px;">N3741X-001</td>
+                      <td style="padding:5px 8px;">ECO SPEC WB INT EGG-BASE 1<br><span style="color:#888;font-size:10px;">Color OC-17 White Dove</span></td>
+                      <td style="padding:5px 8px;text-align:center;">2.00</td>
+                      <td style="padding:5px 8px;text-align:center;">1G</td>
+                      <td style="padding:5px 8px;text-align:right;">$50.50</td>
+                      <td style="padding:5px 8px;text-align:right;font-weight:bold;">$101.00</td>
+                      <td style="padding:5px 8px;text-align:center;"><span class="conf-badge cb-hi">95%</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;background:#f9f9f9;">
+                      <td style="padding:5px 8px;font-family:monospace;font-size:10px;">N5491X-001</td>
+                      <td style="padding:5px 8px;">REGAL SELECT EGG-BASE 1<br><span style="color:#888;font-size:10px;">Color OC-65 Chantilly Lace</span></td>
+                      <td style="padding:5px 8px;text-align:center;">1.00</td>
+                      <td style="padding:5px 8px;text-align:center;">1G</td>
+                      <td style="padding:5px 8px;text-align:right;">$53.25</td>
+                      <td style="padding:5px 8px;text-align:right;font-weight:bold;">$53.25</td>
+                      <td style="padding:5px 8px;text-align:center;"><span class="conf-badge cb-hi">93%</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                      <td style="padding:5px 8px;font-family:monospace;font-size:10px;">1MIL-PL</td>
+                      <td style="padding:5px 8px;">1 MIL PLASTIC COVERS (9' X 12')</td>
+                      <td style="padding:5px 8px;text-align:center;">5.00</td>
+                      <td style="padding:5px 8px;text-align:center;">EACH</td>
+                      <td style="padding:5px 8px;text-align:right;">$2.19</td>
+                      <td style="padding:5px 8px;text-align:right;font-weight:bold;">$10.95</td>
+                      <td style="padding:5px 8px;text-align:center;"><span class="conf-badge cb-hi">91%</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;background:#f9f9f9;">
+                      <td style="padding:5px 8px;font-family:monospace;font-size:10px;">0BAG-ST</td>
+                      <td style="padding:5px 8px;">BAG STRAINERS</td>
+                      <td style="padding:5px 8px;text-align:center;">10.00</td>
+                      <td style="padding:5px 8px;text-align:center;">EACH</td>
+                      <td style="padding:5px 8px;text-align:right;">$3.95</td>
+                      <td style="padding:5px 8px;text-align:right;font-weight:bold;">$39.50</td>
+                      <td style="padding:5px 8px;text-align:center;"><span class="conf-badge cb-hi">90%</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                      <td style="padding:5px 8px;font-family:monospace;font-size:10px;">MASK-02</td>
+                      <td style="padding:5px 8px;">2" MASKING TAPE<br><span style="color:#888;font-size:10px;">Order 5/8/26 · Ordered by KISHOR</span></td>
+                      <td style="padding:5px 8px;text-align:center;">2.00</td>
+                      <td style="padding:5px 8px;text-align:center;">EACH</td>
+                      <td style="padding:5px 8px;text-align:right;">$4.99</td>
+                      <td style="padding:5px 8px;text-align:right;font-weight:bold;">$9.98</td>
+                      <td style="padding:5px 8px;text-align:center;"><span class="conf-badge cb-hi">88%</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Totals / Surcharges -->
+            <div class="form-section">
+              <div class="form-section-hdr">💲 Totals &amp; Charges — Extracted
+                <span style="font-size:10px;font-weight:normal;color:#888;">Verify Total Paint Cost = SubTotal + all fees</span>
+              </div>
+              <div class="form-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <div style="font-size:12px;">
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;"><span>SubTotal (5 items)</span><span>$214.68</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;"><span>Sales Tax</span><span>$0.00</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;"><span>Taxable Eco Fees</span><span>$2.85</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:2px solid #4a90d9;font-weight:bold;font-size:13px;"><span>Total (Account Charges)</span><span style="color:#2e7d32;">$217.53</span></div>
+                  </div>
+                  <div>
+                    <div class="field-conf-row" style="margin-bottom:8px;">
+                      <label style="min-width:110px;">Total Paint Cost</label>
+                      <input class="f-inp hi-border" style="width:120px;font-weight:bold;" type="text" value="$217.53"/>
+                      <span class="conf-tag conf-tag-hi">✓ 96%</span>
+                    </div>
+                    <div class="info-box" style="font-size:10px;">Merit Kaplan uses <b>"Account Charges"</b> as the final total label. OCR maps this to Total Paint Cost.</div>
+                    <div class="field-conf-row">
+                      <label style="min-width:110px;">Notes / Remarks</label>
+                      <textarea class="f-textarea" style="height:42px;font-size:11px;">Eco Fees included. Tax exempt (NY Resale). Net 30 Days.</textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Action buttons -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 16px 12px;border-top:1px solid #eee;">
+            <button class="oe2-btn btn-green">💾 Save &amp; Update</button>
+            <button class="oe2-btn btn-blue">✅ Approve Invoice</button>
+            <button class="oe2-btn btn-orange">🚩 Flag for Review</button>
+            <button class="oe2-btn btn-white">👁 View Original PDF</button>
+            <button class="oe2-btn btn-white" style="margin-left:auto;">← Back to List</button>
+          </div>
+        </div>
+        <!-- Right: Summary panel -->
+        <div style="background:#f8fafc;padding:12px;overflow-y:auto;">
+          <div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:8px;">📊 Confidence Summary</div>
+          <div style="font-size:11px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Vendor Name</span><span class="text-green bold">97%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Invoice Number</span><span class="text-green bold">94%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Invoice Date</span><span class="text-green bold">91%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>AP/PO Number</span><span class="text-green bold">93%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Ship To Address</span><span class="text-green bold">86%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Line Items (5)</span><span class="text-green bold">91%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Total Paint Cost</span><span class="text-green bold">96%</span></div>
+            <div style="border-top:1px solid #ddd;padding-top:6px;margin-top:4px;display:flex;justify-content:space-between;font-weight:bold;"><span>Overall</span><span class="text-green">92%</span></div>
+          </div>
+          <div class="info-box" style="font-size:10px;">✅ All fields high confidence. Safe to approve without manual review.</div>
+          <!-- Vendor format note -->
+          <div style="margin-top:10px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:3px;padding:7px 10px;font-size:10px;">
+            <b>🏷️ Vendor Format: Merit Kaplan</b><br/>
+            Invoice# label: <code>"Number"</code><br/>
+            Date label: <code>"Date"</code><br/>
+            PO label: <code>"PO Number:"</code> → extracted 76390<br/>
+            Total label: <code>"Total" / "Account Charges"</code>
+          </div>
+          <div style="margin-top:10px;font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:6px;">📁 File Info</div>
+          <div style="font-size:11px;color:#555;line-height:1.9;">
+            <div><b>File:</b> MERIT INVOICE.pdf</div>
+            <div><b>Pages:</b> 1</div>
+            <div><b>Size:</b> 369 KB</div>
+            <div><b>Detected:</b> 05/23 9:02 AM</div>
+            <div><b>OCR Engine:</b> Azure Cognitive</div>
+            <div><b>Process Time:</b> 2.8 sec</div>
+            <div><b>Line Items Found:</b> 5</div>
+          </div>
+          <div style="margin-top:10px;">
+            <button class="oe2-btn btn-white" style="width:100%;justify-content:center;font-size:11px;">🗑️ Delete Invoice</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 6 — INVOICE VIEWER (Side-by-Side)
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 6 — Invoice Viewer</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>A side-by-side view showing the <b>original invoice document</b> (left) next to the <b>OCR-extracted data</b> (right). This allows users to visually compare the actual invoice with what the OCR captured, making it easy to spot and correct errors. Zoom, rotate, and page navigation controls help with hard-to-read invoices.</p>
+    <ul>
+      <li><b>Left panel</b> — the original PDF/image rendered in the browser (zoom in/out, rotate, multi-page nav)</li>
+      <li><b>Right panel</b> — OCR extracted fields with confidence scores; all fields are editable inline</li>
+      <li>If OCR failed completely, a manual data entry form appears in the right panel instead</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">👁️</div>
+    <div class="oe2-banner-label">Invoice Viewer — BM-45901.pdf</div>
+    <div class="oe2-banner-sub">4 pages &nbsp;|&nbsp; OCR: 72% confidence</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Processing Queue</a><span class="sep">›</span>Invoice Viewer — BM-45901.pdf</div>
+      <div class="viewer-layout">
+        <!-- Left: PDF Preview -->
+        <div class="viewer-left">
+          <div class="viewer-toolbar">
+            <span style="color:#ddd;font-size:11px;font-weight:bold;">Page:</span>
+            <div class="v-btn">‹ Prev</div>
+            <span style="color:#fff;font-size:11px;background:#555;padding:2px 8px;border-radius:3px;">1 / 4</span>
+            <div class="v-btn">Next ›</div>
+            <div class="btn-sep" style="background:#555;"></div>
+            <div class="v-btn">🔍−</div>
+            <span style="color:#ddd;font-size:11px;">100%</span>
+            <div class="v-btn">🔍+</div>
+            <div class="btn-sep" style="background:#555;"></div>
+            <div class="v-btn">↺ Rotate</div>
+            <div class="v-btn" style="margin-left:auto;">⬇ Download</div>
+          </div>
+          <div class="viewer-canvas">
+            <!-- Simulated invoice page -->
+            <!-- Simulated Deluxe Paint & Chemical invoice layout -->
+            <div class="viewer-page">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:bold;line-height:1.6;">
+                  <div style="font-size:13px;font-weight:bold;">Deluxe Paint &amp; Chemical Co</div>
+                  <div>605 4th Avenue</div>
+                  <div>Brooklyn, NY 11215</div>
+                  <div>Tel: 718-768-9494 &nbsp; Fax: 718-369-0979</div>
+                </div>
+                <div style="font-size:20px;font-weight:bold;letter-spacing:3px;color:#222;">I N V O I C E</div>
+              </div>
+              <!-- Date/Invoice# header box -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #999;font-size:9px;margin-bottom:8px;">
+                <div style="padding:3px 5px;border-right:1px solid #999;background:#e8e8e8;font-weight:bold;">Date</div>
+                <div style="padding:3px 5px;border-right:1px solid #999;background:#e8e8e8;font-weight:bold;">Invoice#</div>
+                <div style="padding:3px 5px;background:#e8e8e8;font-weight:bold;">Page</div>
+                <div style="padding:3px 5px;border-right:1px solid #999;background:#fff8e1;">4/30/26</div>
+                <div style="padding:3px 5px;border-right:1px solid #999;background:#fff8e1;font-weight:bold;">1-784814-01</div>
+                <div style="padding:3px 5px;">1</div>
+              </div>
+              <!-- Bill To / Ship To -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;font-size:9px;">
+                <div style="border:1px solid #999;padding:4px 6px;">
+                  <div style="font-weight:bold;margin-bottom:3px;background:#e8e8e8;margin:-4px -6px 4px;padding:2px 6px;">Bill To</div>
+                  <div>ALBERT PEARLMAN</div><div>60 EAST 42ND STREET</div><div>SUITE 2112</div><div>NEW YORK, NY 10165-1663</div>
+                </div>
+                <div style="border:1px solid #999;padding:4px 6px;">
+                  <div style="font-weight:bold;margin-bottom:3px;background:#e8e8e8;margin:-4px -6px 4px;padding:2px 6px;">Ship To</div>
+                  <div>Albert Pearlman</div><div>51 Astor Place 7th Floor</div><div>NY, NY</div>
+                </div>
+              </div>
+              <!-- Order header row -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 0.6fr 0.5fr 1.2fr 0.4fr 1fr 0.6fr;border:1px solid #999;font-size:8px;margin-bottom:6px;background:#e8e8e8;">
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;">Order#</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;">Order Date</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;">Customer</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;">Salesman</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;background:#fff3e0;">RO No.</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;">Via</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;font-weight:bold;">Ship Date</div>
+                <div style="padding:2px 3px;font-weight:bold;">Terms</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 0.6fr 0.5fr 1.2fr 0.4fr 1fr 0.6fr;border:1px solid #999;border-top:none;font-size:8px;margin-bottom:8px;">
+                <div style="padding:2px 3px;border-right:1px solid #aaa;">1-784814</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;">04/29/2026</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;">961</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;">AS</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;background:#ffebee;font-weight:bold;color:#c62828;">AP76150/Daren</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;">T</div>
+                <div style="padding:2px 3px;border-right:1px solid #aaa;">04/30/2026</div>
+                <div style="padding:2px 3px;">N30</div>
+              </div>
+              <!-- Line items -->
+              <table style="width:100%;border-collapse:collapse;font-size:8px;border:1px solid #999;margin-bottom:8px;">
+                <thead>
+                  <tr style="background:#e8e8e8;">
+                    <th style="padding:2px 4px;border-right:1px solid #aaa;text-align:left;">Qty</th>
+                    <th style="padding:2px 4px;border-right:1px solid #aaa;text-align:left;">Item Code</th>
+                    <th style="padding:2px 4px;border-right:1px solid #aaa;text-align:left;">Description</th>
+                    <th style="padding:2px 4px;border-right:1px solid #aaa;text-align:right;">Unit Price</th>
+                    <th style="padding:2px 4px;border-right:1px solid #aaa;text-align:center;">Per Unit</th>
+                    <th style="padding:2px 4px;text-align:right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style="padding:2px 4px;border-right:1px solid #eee;">1</td><td style="padding:2px 4px;border-right:1px solid #eee;">N5471X-001</td><td style="padding:2px 4px;border-right:1px solid #eee;">Regal Select Int. Flat #1591 Sterling<br><span style="color:#888;">PaintCare Fee: $0.95</span></td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:right;">$49.99</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:center;">GAL.</td><td style="padding:2px 4px;text-align:right;">49.99</td></tr>
+                  <tr style="background:#fafafa;"><td style="padding:2px 4px;border-right:1px solid #eee;">3</td><td style="padding:2px 4px;border-right:1px solid #eee;">742</td><td style="padding:2px 4px;border-right:1px solid #eee;">7 x 3/8 lint free paint roller 12/bx</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:right;">$3.49</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:center;">EACH</td><td style="padding:2px 4px;text-align:right;">10.47</td></tr>
+                  <tr><td style="padding:2px 4px;border-right:1px solid #eee;">4</td><td style="padding:2px 4px;border-right:1px solid #eee;">943</td><td style="padding:2px 4px;border-right:1px solid #eee;">9 x 1/2" lint free paint roller sleeve 36/bx</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:right;">$4.49</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:center;">EACH</td><td style="padding:2px 4px;text-align:right;">17.96</td></tr>
+                  <tr style="background:#fafafa;"><td style="padding:2px 4px;border-right:1px solid #eee;">1</td><td style="padding:2px 4px;border-right:1px solid #eee;">CHP220020-001</td><td style="padding:2px 4px;border-right:1px solid #eee;">SUPERSPEC UR GL EN -SAFETY RED<br><span style="color:#888;">PaintCare Fee: $0.95</span></td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:right;">$48.95</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:center;">GAL.</td><td style="padding:2px 4px;text-align:right;">48.95</td></tr>
+                  <tr><td style="padding:2px 4px;border-right:1px solid #eee;">1</td><td style="padding:2px 4px;border-right:1px solid #eee;">N5471X-001</td><td style="padding:2px 4px;border-right:1px solid #eee;">Regal Select Int. Flat #AF-685 Thunder<br><span style="color:#888;">PaintCare Fee: $0.95</span></td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:right;">$49.99</td><td style="padding:2px 4px;border-right:1px solid #eee;text-align:center;">GAL.</td><td style="padding:2px 4px;text-align:right;">49.99</td></tr>
+                </tbody>
+              </table>
+              <!-- Totals -->
+              <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                <div style="font-size:9px;text-align:right;line-height:1.8;min-width:160px;">
+                  <div style="display:flex;justify-content:space-between;gap:20px;"><span>Sale Amount:</span><span>177.36</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:20px;"><span>Discount:</span><span>0.00</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:20px;"><span>Misc. Charge:</span><span>0.00</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:20px;"><span>Fuel Surcharge:</span><span>0.00</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:20px;"><span>PaintCare Fee:</span><span>2.85</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:20px;"><span>Sales Tax:</span><span>0.00</span></div>
+                  <div style="display:flex;justify-content:space-between;gap:20px;font-weight:bold;border-top:1px solid #999;padding-top:3px;"><span>Total:</span><span>180.21</span></div>
+                </div>
+              </div>
+              <div style="text-align:center;font-size:14px;font-weight:bold;color:#555;margin-top:10px;">THANK YOU!</div>
+              <!-- OCR annotation -->
+              <div style="margin-top:10px;font-size:8px;background:#fff3e0;padding:4px 6px;border-left:3px solid #ff9800;border-radius:2px;">
+                ⚠ OCR flagged: <b>"RO No."</b> = AP76150/Daren — AP# extracted as "76150", trailing "/Daren" stripped. Verify in OE2.
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: OCR Data Panel -->
+        <div class="viewer-panel">
+          <div class="vp-hdr">🤖 OCR Extracted Data — Deluxe <span style="font-size:10px;font-weight:normal;margin-left:auto;opacity:.8;">Edit to correct</span></div>
+          <div style="background:#fff3e0;padding:5px 12px;font-size:10px;color:#e65100;border-bottom:1px solid #ffe0b2;">⚠ Overall: 78% · "RO No." field needs AP# verification</div>
+          <div class="vp-field">
+            <label>Vendor Name</label>
+            <div class="vp-val">Deluxe Paint &amp; Chemical Co</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">97% High</span></div>
+          </div>
+          <div class="vp-field">
+            <label>Invoice Number</label>
+            <div class="vp-val">1-784814-01</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">94% High</span> <span style="color:#888;font-size:9px;">from "Invoice#"</span></div>
+          </div>
+          <div class="vp-field">
+            <label>Invoice Date</label>
+            <div class="vp-val">04/30/2026</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">91% High</span> <span style="color:#888;font-size:9px;">from "Date" col</span></div>
+          </div>
+          <div class="vp-field">
+            <label>Bill To (Customer)</label>
+            <div class="vp-val">ALBERT PEARLMAN</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">96% High</span></div>
+          </div>
+          <div class="vp-field" style="background:#fff5f5;">
+            <label>AP/PO Number ⚠</label>
+            <input type="text" value="76150" style="width:100%;height:24px;border:1px solid #ff9800;padding:0 6px;font-size:12px;border-radius:3px;font-weight:bold;"/>
+            <div style="font-size:10px;margin-top:3px;"><span class="conf-badge cb-mi">72% Med</span> <span style="color:#888;font-size:9px;">from "RO No." = AP76150/Daren</span></div>
+          </div>
+          <div class="vp-field">
+            <label>Ship To Address</label>
+            <div class="vp-val" style="font-size:11px;">51 Astor Place 7th Floor</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">88% High</span></div>
+          </div>
+          <div class="vp-field">
+            <label>Line Items</label>
+            <div class="vp-val" style="font-size:11px;font-weight:normal;">5 items detected</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">91% High</span></div>
+          </div>
+          <div class="vp-field">
+            <label>Total Paint Cost</label>
+            <div class="vp-val">$180.21</div>
+            <div style="font-size:10px;margin-top:2px;"><span class="conf-badge cb-hi">93% High</span> <span style="color:#888;font-size:9px;">from "Total:" label</span></div>
+          </div>
+          <div class="vp-field" style="background:#fafafa;">
+            <label style="font-size:9px;color:#888;">Surcharge breakdown</label>
+            <div style="font-size:9px;color:#666;line-height:1.8;">Sale: $177.36 · PaintCare: $2.85 · Tax: $0.00</div>
+          </div>
+          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px;border-top:1px solid #eee;margin-top:auto;">
+            <button class="oe2-btn btn-green" style="justify-content:center;">💾 Save Changes</button>
+            <button class="oe2-btn btn-blue" style="justify-content:center;">✅ Approve</button>
+            <button class="oe2-btn btn-white" style="justify-content:center;font-size:11px;">✏️ Full Edit Screen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 7 — MANUAL INVOICE ENTRY
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 7 — Manual Invoice Entry</div>
+  <div class="doc-desc">
+    <h4>When to use this screen</h4>
+    <p>When the OCR engine completely fails to read an invoice (torn paper scan, handwritten invoice, very low quality image), or when there is no file to upload at all, use this screen to enter the invoice data manually. You can still attach the original file for reference even if OCR cannot process it.</p>
+    <ul>
+      <li><b>Upload Attachment</b> — attach the original invoice file for record-keeping (optional)</li>
+      <li><b>Save as Draft</b> — saves the entry but keeps it in Draft status for someone else to complete/verify</li>
+      <li><b>Submit for Approval</b> — marks as ready for manager review and approval</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">✏️</div>
+    <div class="oe2-banner-label">Invoice OCR — Manual Invoice Entry</div>
+    <div class="oe2-banner-sub">Create invoice manually when OCR cannot extract data</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Invoice Management</a><span class="sep">›</span>Manual Entry — New Invoice</div>
+      <div style="display:grid;grid-template-columns:1fr 320px;min-height:480px;">
+        <!-- Left: Form -->
+        <div class="ocr-form-area" style="border-right:1px solid #ddd;">
+          <div class="info-box">ℹ️ Use this form to manually create an invoice record. All fields marked <b style="color:#c62828;">*</b> are required. Attach the original invoice file for audit reference.</div>
+          <div class="form-section">
+            <div class="form-section-hdr">📋 Invoice Details</div>
+            <div class="form-body">
+              <div class="f-row"><label>Vendor Name <span style="color:#c62828">*</span></label><input class="f-inp w300" type="text" placeholder="e.g. Sherwin Williams Co."/></div>
+              <div class="f-row"><label>Invoice Number <span style="color:#c62828">*</span></label><input class="f-inp w200" type="text" placeholder="e.g. INV-12345"/></div>
+              <div class="f-row"><label>Invoice Date <span style="color:#c62828">*</span></label><input class="f-inp w140" type="date" value="2026-05-23"/></div>
+              <div class="f-row"><label>Customer Name <span style="color:#c62828">*</span></label><input class="f-inp w300" type="text" placeholder="e.g. OBRA / 437 Madison…"/></div>
+              <div class="f-row">
+                <label>AP Number (OE2) <span style="color:#c62828">*</span></label>
+                <input class="f-inp w160" type="text" placeholder="e.g. 10001.00"/>
+                <button class="oe2-btn btn-white" style="font-size:11px;">🔍 Lookup Job</button>
+              </div>
+              <div class="f-row"><label>Total Paint Cost <span style="color:#c62828">*</span></label><input class="f-inp w160" type="text" placeholder="$0.00"/></div>
+              <div class="f-row"><label>Notes / Remarks</label><textarea class="f-textarea" style="width:100%;max-width:400px;" placeholder="Any additional notes about this invoice…"></textarea></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:10px;">
+            <button class="oe2-btn btn-blue">📤 Submit for Approval</button>
+            <button class="oe2-btn btn-white">💾 Save as Draft</button>
+            <button class="oe2-btn btn-white" style="margin-left:auto;">✕ Cancel</button>
+          </div>
+        </div>
+        <!-- Right: Upload -->
+        <div style="padding:14px;background:#fafafa;">
+          <div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:10px;">📎 Attach Invoice File</div>
+          <div class="upload-drop">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Drop file here or click to browse</div>
+            <div class="upload-sub">PDF, JPG, PNG, TIFF — Max 25 MB</div>
+            <button class="oe2-btn btn-blue" style="margin-top:12px;">Browse File</button>
+          </div>
+          <div style="margin-top:12px;font-size:11px;color:#888;">
+            <b>Note:</b> Attaching a file is optional for manual entry but strongly recommended for audit purposes. The file will be stored in the Completed folder.
+          </div>
+          <div style="margin-top:14px;padding-top:10px;border-top:1px solid #eee;">
+            <div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:8px;">⚡ Quick Options</div>
+            <div style="font-size:11px;color:#555;line-height:2;">
+              <div><label class="chk-item"><input type="checkbox" checked> Mark as manually entered (no OCR)</label></div>
+              <div><label class="chk-item"><input type="checkbox"> Skip approval workflow — approve immediately</label></div>
+              <div><label class="chk-item"><input type="checkbox"> Notify manager after submission</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 8 — OCR SETTINGS & TRAINING
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 8 — OCR Settings &amp; Training</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>Configure the OCR engine, set confidence thresholds, map OCR output fields to OE2 database fields, and test the OCR engine with a sample invoice. Training with sample invoices improves accuracy over time — upload 5–10 representative invoices from your common vendors and click <b>Train OCR</b> to improve field detection.</p>
+    <ul>
+      <li><b>Confidence Threshold</b> — invoices above this % are auto-queued; below triggers manual review</li>
+      <li><b>Field Mapping</b> — tells the OCR engine which extracted label corresponds to which OE2 field</li>
+      <li><b>Test Extraction</b> — upload a test invoice and see what fields get extracted and at what confidence</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">🔧</div>
+    <div class="oe2-banner-label">Invoice OCR — OCR Settings &amp; Training</div>
+    <div class="oe2-banner-sub">Admin — Configuration</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Configuration</a><span class="sep">›</span>OCR Settings</div>
+      <div class="ocr-form-area">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <!-- Provider -->
+          <div class="form-section">
+            <div class="form-section-hdr">🤖 OCR Provider Configuration</div>
+            <div class="form-body">
+              <div class="f-row"><label>OCR Provider</label>
+                <select class="f-sel w200"><option>Tesseract (Local — Free)</option><option selected>Azure Cognitive Services</option><option>AWS Textract</option><option>Google Vision AI</option></select>
+              </div>
+              <div class="f-row"><label>API Endpoint</label><input class="f-inp w300" type="text" value="https://eastus.api.cognitive.microsoft.com/"/></div>
+              <div class="f-row"><label>API Key</label><input class="f-inp w300" type="password" value="●●●●●●●●●●●●●●●●●●●●"/></div>
+              <div class="f-row"><label>OCR Language</label>
+                <select class="f-sel w160"><option selected>English (en)</option><option>Spanish (es)</option><option>French (fr)</option><option>Auto-Detect</option></select>
+              </div>
+              <div class="f-row"><label>Connection Status</label><span class="oe2-badge b-approved">✓ Connected — Tested 2:10 PM</span></div>
+              <button class="oe2-btn btn-blue" style="margin-top:4px;">🔗 Test Connection</button>
+            </div>
+          </div>
+          <!-- Confidence Thresholds -->
+          <div class="form-section">
+            <div class="form-section-hdr">📊 Confidence Thresholds</div>
+            <div class="form-body">
+              <div class="range-row">
+                <label>Auto-Approve Above</label>
+                <input type="range" min="50" max="100" value="85"/>
+                <span class="range-val">85%</span>
+                <span class="oe2-badge b-approved" style="font-size:10px;">High</span>
+              </div>
+              <div class="range-row">
+                <label>Manual Review Below</label>
+                <input type="range" min="0" max="100" value="70"/>
+                <span class="range-val">70%</span>
+                <span class="oe2-badge b-warning" style="font-size:10px;">Medium</span>
+              </div>
+              <div class="range-row">
+                <label>Auto-Reject Below</label>
+                <input type="range" min="0" max="60" value="30"/>
+                <span class="range-val">30%</span>
+                <span class="oe2-badge b-failed" style="font-size:10px;">Low</span>
+              </div>
+              <div class="info-box" style="margin-top:8px;">
+                ℹ️ <b>85%+</b> → Auto queue for approval &nbsp;|&nbsp; <b>70–84%</b> → Manual review &nbsp;|&nbsp; <b>below 30%</b> → Mark as Failed
+              </div>
+              <div class="f-row" style="margin-top:6px;"><label>Max Pages / Invoice</label><input class="f-inp w80" type="text" value="20"/></div>
+              <div class="f-row"><label>Timeout (per page)</label><input class="f-inp w80" type="text" value="30"/><span class="muted">seconds</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Field Mapping -->
+        <div class="form-section">
+          <div class="form-section-hdr">🗺️ Field Mapping — OCR Output → OE2 Fields <span style="font-size:11px;font-weight:normal;color:#888;">These labels are searched for in the OCR output to extract values</span></div>
+          <div class="form-body">
+            <!-- Real label mapping based on 6 actual vendor invoices -->
+            <table class="mapping-table">
+              <thead><tr>
+                <th>OE2 Field</th>
+                <th>Known OCR Labels from Real Invoices <span style="font-weight:normal;color:#888;">(all 6 vendors)</span></th>
+                <th style="width:60px;">Required</th>
+                <th style="width:100px;">Conf. Weight</th>
+                <th style="width:90px;">Special Parse</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td><b>Vendor Name</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="company name (header), from, supplier, vendor"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">All vendors: extracted from document letterhead/header block — top-left company name</div>
+                  </td>
+                  <td class="center"><input type="checkbox" checked/></td>
+                  <td><select class="f-sel" style="width:90px;"><option selected>High</option><option>Normal</option></select></td>
+                  <td style="font-size:10px;color:#555;">Header region</td>
+                </tr>
+                <tr style="background:#fafafa;">
+                  <td><b>Invoice Number</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Invoice#, INVOICE:, Number, No., Invoice [ID] (heading text)"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">
+                      Deluxe: <code>"Invoice#"</code> · Janovic: <code>"INVOICE:"</code> · Merit: <code>"Number"</code> · Sherwin-Williams: <code>"No."</code> · Eastern/Aboffs: invoice# embedded in heading text
+                    </div>
+                  </td>
+                  <td class="center"><input type="checkbox" checked/></td>
+                  <td><select class="f-sel" style="width:90px;"><option selected>High</option><option>Normal</option></select></td>
+                  <td style="font-size:10px;color:#555;">Heading parse</td>
+                </tr>
+                <tr>
+                  <td><b>Invoice Date</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Date, DATE, DATE / TIME, By: [name] [date] (parse date from string)"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">
+                      Deluxe/Merit: <code>"Date"</code> column · Janovic: <code>"DATE / TIME"</code> · Sherwin-Williams: <code>"DATE:"</code> label · <b style="color:#e65100;">Eastern &amp; Aboffs (Rundoo): <code>"By: Danielle May 18, 2026 9:05am"</code> — must regex-parse date from text</b>
+                    </div>
+                  </td>
+                  <td class="center"><input type="checkbox" checked/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option selected>Normal</option></select></td>
+                  <td style="font-size:10px;color:#e65100;">Regex parse</td>
+                </tr>
+                <tr style="background:#fafafa;">
+                  <td><b>Customer / Bill To</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Bill To, SOLD TO, Customer, CUSTOMER (always Albert Pearlman)"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">All invoices bill to ALBERT PEARLMAN — used for verification only, not stored separately</div>
+                  </td>
+                  <td class="center"><input type="checkbox"/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option selected>Normal</option></select></td>
+                  <td style="font-size:10px;color:#555;">Verify only</td>
+                </tr>
+                <tr style="background:#fff0f0;">
+                  <td><b style="color:#c62828;">AP/PO Number ★</b><br/><span style="font-size:9px;color:#c62828;">Critical field</span></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;border-color:#f44336;" type="text" value="RO No., PO:, PO#, PURCHASE ORDER:, PO Number:, Job: [num] (extract number only)"/>
+                    <div style="font-size:9px;color:#c62828;margin-top:3px;font-weight:bold;">
+                      ⚠ Each vendor uses a different label — all map to the same OE2 Job/AP Number:<br/>
+                      Deluxe: <code>"RO No." = "AP76150/Daren"</code> → strip "AP" prefix, strip "/Daren" suffix → <b>76150</b><br/>
+                      Eastern/Aboffs/Merit: <code>"PO:" / "PO Number:" = "76656"</code> → numeric as-is → <b>76656</b><br/>
+                      Janovic: <code>"PURCHASE ORDER:" = "76369"</code> → numeric as-is → <b>76369</b><br/>
+                      Sherwin-Williams: <code>"PO#" = "AP76228/7 WEST 34TH"</code> → regex extract AP#, strip address → <b>76228</b>
+                    </div>
+                  </td>
+                  <td class="center"><input type="checkbox" checked/></td>
+                  <td><select class="f-sel" style="width:90px;"><option selected>High</option><option>Normal</option></select></td>
+                  <td style="font-size:10px;color:#c62828;font-weight:bold;">Regex strip<br/>always verify</td>
+                </tr>
+                <tr>
+                  <td><b>Ship To / Job Site</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Ship To, SHIP TO, Address (Details section), Fulfillment Location"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">Eastern/Aboffs: <code>"Address:"</code> field in Details section. Sherwin-Williams: <code>"SHIPPED TO:"</code>. Used to cross-reference OE2 job site address.</div>
+                  </td>
+                  <td class="center"><input type="checkbox"/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option selected>Normal</option></select></td>
+                  <td style="font-size:10px;color:#555;">Optional</td>
+                </tr>
+                <tr style="background:#fff0f0;">
+                  <td><b style="color:#c62828;">Total Paint Cost ★</b><br/><span style="font-size:9px;color:#c62828;">Critical field</span></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;border-color:#f44336;" type="text" value="Total, TOTAL, CHARGE, Account Charges, Total Due, Grand Total, Amount Due"/>
+                    <div style="font-size:9px;color:#c62828;margin-top:3px;font-weight:bold;">
+                      ⚠ Sherwin-Williams uses <code>"CHARGE"</code> (not "Total") as the final payable label — $678.72<br/>
+                      Merit Kaplan uses <code>"Account Charges"</code> as the payable total — $217.53<br/>
+                      All others: <code>"Total"</code> — Eastern/Aboffs show total in page heading too
+                    </div>
+                  </td>
+                  <td class="center"><input type="checkbox" checked/></td>
+                  <td><select class="f-sel" style="width:90px;"><option selected>High</option><option>Normal</option></select></td>
+                  <td style="font-size:10px;color:#c62828;font-weight:bold;">Multi-label<br/>always verify</td>
+                </tr>
+                <tr style="background:#fafafa;">
+                  <td><b>Surcharges</b><br/><span style="font-size:9px;color:#555;">Sub-totals</span></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="PaintCare Fee, Fuel Surcharge, Eco Fee, NY Eco Fee, Taxable Eco Fees, Misc. Charge, Discount"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">
+                      Deluxe: PaintCare Fee $2.85, Fuel Surcharge · Merit: Taxable Eco Fees $2.85 · Aboffs: Ben Moore Fuel Surcharge 2.5%, NY Eco Fee $0.95/gal · Sherwin-Williams: Govt Imposed Paint Fee $0.95/1gal, $1.95/5gal
+                    </div>
+                  </td>
+                  <td class="center"><input type="checkbox"/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option selected>Normal</option><option>Low</option></select></td>
+                  <td style="font-size:10px;color:#555;">Stored as<br/>breakdown</td>
+                </tr>
+                <tr>
+                  <td><b>Sales Tax</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Sales Tax, Tax Amount, TAX AMOUNT, 8.875% Sales Tax"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">Most vendors: TAX EXEMPT (Albert Pearlman is tax-exempt). Sherwin-Williams: "8.875% SALES TAX" = $0.00. Eastern/Aboffs: "Sales tax" line present but $0.</div>
+                  </td>
+                  <td class="center"><input type="checkbox"/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option selected>Normal</option></select></td>
+                  <td style="font-size:10px;color:#555;">Usually $0</td>
+                </tr>
+                <tr style="background:#fafafa;">
+                  <td><b>Payment Terms</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Terms, TERMS, Payment Terms, Due Date"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">Deluxe: N30 · Merit: Net 30 Days · Janovic: NET 15 EOM · Sherwin-Williams: "2% 10 DAYS, NET PAYMENT DUE ON JULY 20" · Aboffs: "Due Aug 29, 2026"</div>
+                  </td>
+                  <td class="center"><input type="checkbox"/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option>Normal</option><option selected>Low</option></select></td>
+                  <td style="font-size:10px;color:#555;">Info only</td>
+                </tr>
+                <tr>
+                  <td><b>Notes / Remarks</b></td>
+                  <td>
+                    <input class="f-inp" style="width:100%;" type="text" value="Sale notes, Notes, Remarks, Comments, Special discounts"/>
+                    <div style="font-size:9px;color:#888;margin-top:2px;">Eastern/Aboffs (Rundoo): <code>"Sale notes:"</code> field — e.g. "BASEMENT *THURSDAY MORNING*", "Ordered by Rob L." — useful for job context</div>
+                  </td>
+                  <td class="center"><input type="checkbox"/></td>
+                  <td><select class="f-sel" style="width:90px;"><option>High</option><option>Normal</option><option selected>Low</option></select></td>
+                  <td style="font-size:10px;color:#555;">Optional</td>
+                </tr>
+              </tbody>
+            </table>
+            <!-- PO Parsing rules -->
+            <div style="margin-top:10px;background:#ffebee;border:1px solid #ffcdd2;border-radius:4px;padding:10px 14px;">
+              <div style="font-size:12px;font-weight:bold;color:#c62828;margin-bottom:6px;">⚠️ AP/PO Number Parsing Rules — Critical Configuration</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;">
+                <div style="background:#fff;padding:6px 8px;border-radius:3px;border:1px solid #ffcdd2;">
+                  <b>Deluxe Paint</b><br/>Label: <code>RO No.</code><br/>Raw: <code>AP76150/Daren</code><br/>Rule: Strip <code>AP</code> prefix → take digits before <code>/</code><br/>Result: <b>76150</b>
+                </div>
+                <div style="background:#fff;padding:6px 8px;border-radius:3px;border:1px solid #ffcdd2;">
+                  <b>Sherwin-Williams</b><br/>Label: <code>PO#</code><br/>Raw: <code>AP76228/7 WEST 34TH</code><br/>Rule: Strip <code>AP</code> → take digits before <code>/</code><br/>Result: <b>76228</b>
+                </div>
+                <div style="background:#fff;padding:6px 8px;border-radius:3px;border:1px solid #ffcdd2;">
+                  <b>Eastern / Aboffs / Merit / Janovic</b><br/>Labels: <code>PO: / PO Number: / PURCHASE ORDER:</code><br/>Raw: <code>76656</code> / <code>76390</code> / <code>76369</code><br/>Rule: Numeric as-is<br/>Result: as extracted
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Training & Test -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-section">
+            <div class="form-section-hdr">🎓 OCR Training — Upload Sample Invoices</div>
+            <div class="form-body">
+              <div style="font-size:11px;color:#555;margin-bottom:10px;">Upload 5–20 invoices from your regular vendors to improve OCR accuracy for those specific formats.</div>
+              <div class="upload-drop" style="padding:18px;">
+                <div class="upload-icon" style="font-size:28px;">📚</div>
+                <div class="upload-text" style="font-size:12px;">Drop training invoices here</div>
+                <div class="upload-sub">PDF, JPG, PNG — multiple files OK</div>
+                <button class="oe2-btn btn-blue" style="margin-top:8px;font-size:11px;">Browse Files</button>
+              </div>
+              <div style="margin-top:10px;font-size:11px;color:#555;">
+                <div>📊 <b>Last trained:</b> May 20, 2026 &nbsp;&nbsp; <b>Training samples:</b> 47 invoices</div>
+                <div style="margin-top:4px;">📈 <b>Accuracy improvement since training:</b> <span class="text-green bold">+6.2%</span></div>
+              </div>
+              <button class="oe2-btn btn-purple" style="margin-top:10px;">🎓 Run Training</button>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-hdr">🧪 Test OCR Extraction</div>
+            <div class="form-body">
+              <div style="font-size:11px;color:#555;margin-bottom:10px;">Upload a test invoice to see exactly what fields the OCR engine extracts and at what confidence levels.</div>
+              <div class="upload-drop" style="padding:18px;">
+                <div class="upload-icon" style="font-size:28px;">🔬</div>
+                <div class="upload-text" style="font-size:12px;">Drop test invoice here</div>
+                <div class="upload-sub">Single file — PDF, JPG, PNG</div>
+                <button class="oe2-btn btn-blue" style="margin-top:8px;font-size:11px;">Browse File</button>
+              </div>
+              <button class="oe2-btn btn-orange" style="margin-top:10px;">⚡ Run Test Extraction</button>
+              <div class="info-box" style="margin-top:10px;font-size:10px;">Test results appear here after extraction — no data is saved to the database.</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;padding:4px 0 10px;">
+          <button class="oe2-btn btn-green">💾 Save OCR Settings</button>
+          <button class="oe2-btn btn-white">✕ Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 9 — ERROR & AUDIT LOGS
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 9 — Error &amp; Audit Logs</div>
+  <div class="doc-desc">
+    <h4>What this screen shows</h4>
+    <p>Complete audit trail of everything that happens in the OCR module. Use the tabs to switch between log categories. All logs can be downloaded as a CSV file for external review or archiving. The <b>User Activity</b> tab shows who made manual edits to invoice data and what they changed.</p>
+    <ul>
+      <li><b>OCR Errors</b> — files that failed processing, with the specific error reason</li>
+      <li><b>Service Logs</b> — Windows Service start/stop, scan cycles, config changes</li>
+      <li><b>File Logs</b> — every file detected, moved to Completed or Failed folder</li>
+      <li><b>User Activity</b> — who approved, edited, or deleted invoice records and when</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">📝</div>
+    <div class="oe2-banner-label">Invoice OCR — Error &amp; Audit Logs</div>
+    <div class="oe2-banner-sub">Full audit trail — all activity logged</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Reports</a><span class="sep">›</span>Audit Logs</div>
+      <!-- Toolbar -->
+      <div class="ocr-toolbar">
+        <button class="oe2-btn btn-gray">📥 Download CSV</button>
+        <button class="oe2-btn btn-white">🖨️ Print Logs</button>
+        <div class="btn-sep"></div>
+        <button class="oe2-btn btn-red" style="font-size:11px;">🗑️ Clear Old Logs (&gt;90 days)</button>
+        <div style="margin-left:auto;font-size:11px;color:#888;">Log retention: <b>90 days</b></div>
+      </div>
+      <!-- Search -->
+      <div class="ocr-search-bar">
+        <input class="f-input w200" type="text" placeholder="🔍 Search message / file / user…"/>
+        <select class="f-select w120"><option>All Levels</option><option>INFO</option><option>WARNING</option><option>ERROR</option><option>DEBUG</option></select>
+        <input class="f-input w120" type="date" value="2026-05-23"/>
+        <span class="muted">to</span>
+        <input class="f-input w120" type="date" value="2026-05-23"/>
+        <button class="oe2-btn btn-blue">Search</button>
+        <button class="oe2-btn btn-white">Clear</button>
+      </div>
+      <!-- Log Type Tabs -->
+      <div class="status-tabs">
+        <div class="st-tab active">🔴 OCR Errors <span class="n">4</span></div>
+        <div class="st-tab">⚙️ Service Logs <span class="n">128</span></div>
+        <div class="st-tab">📁 File Logs <span class="n">142</span></div>
+        <div class="st-tab">👤 User Activity <span class="n">31</span></div>
+      </div>
+      <div style="height:1px;background:#e0e0e0;"></div>
+      <div class="grid-area" style="padding-top:8px;">
+        <table class="oe2-grid">
+          <thead><tr>
+            <th style="width:140px;">Timestamp</th>
+            <th style="width:70px;">Level</th>
+            <th style="width:120px;">File / Source</th>
+            <th>Message</th>
+            <th style="width:80px;">Details</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/23/2026 11:32 AM</td>
+              <td><span class="log-level ll-err">ERROR</span></td>
+              <td style="font-size:11px;">scan_broken.jpg</td>
+              <td style="font-size:12px;">OCR extraction failed — image quality too low. Average confidence 18%. File moved to Failed folder.</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/23/2026 10:45 AM</td>
+              <td><span class="log-level ll-warn">WARN</span></td>
+              <td style="font-size:11px;">BM-45901.pdf</td>
+              <td style="font-size:12px;">Field "AP Number" extracted with low confidence (41%). Invoice flagged for manual review.</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/23/2026 10:12 AM</td>
+              <td><span class="log-level ll-err">ERROR</span></td>
+              <td style="font-size:11px;">Azure OCR API</td>
+              <td style="font-size:12px;">API rate limit reached — request throttled. Retrying in 60 seconds. (HTTP 429)</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/23/2026 9:15 AM</td>
+              <td><span class="log-level ll-warn">WARN</span></td>
+              <td style="font-size:11px;">may_invoice_ruste.pdf</td>
+              <td style="font-size:12px;">File has 5 pages — exceeds recommended length. OCR confidence may be lower for pages 3–5.</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/22/2026 3:48 PM</td>
+              <td><span class="log-level ll-info">INFO</span></td>
+              <td style="font-size:11px;">INV-2887.pdf</td>
+              <td style="font-size:12px;">Invoice successfully processed. Confidence: 91%. Approved by Mark Klein. Linked to OE2 job 10004.00.</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/22/2026 9:00 AM</td>
+              <td><span class="log-level ll-info">INFO</span></td>
+              <td style="font-size:11px;">Windows Service</td>
+              <td style="font-size:12px;">OCR Windows Service started. Version 2.4.1. Scan interval: 5 minutes. Input folder: \\Server01\Invoices\Incoming</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+            <tr>
+              <td class="muted" style="font-size:11px;">05/21/2026 4:30 PM</td>
+              <td><span class="log-level ll-dbg">DEBUG</span></td>
+              <td style="font-size:11px;">Folder Monitor</td>
+              <td style="font-size:12px;">Scan cycle completed. Files found: 3. New: 2. Already queued: 1. Next scan: 4:35 PM.</td>
+              <td><a class="lnk" style="font-size:11px;">View →</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <div class="pg-btn">‹</div><div class="pg-btn active">1</div><div class="pg-btn">2</div><div class="pg-btn">3</div><div class="pg-btn">4</div><div class="pg-btn">›</div>
+        <div class="pg-info">Showing 1–7 of 163 log entries &nbsp;|&nbsp; Today: 34 entries</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCREEN 10 — NOTIFICATIONS & ALERTS
+     ═══════════════════════════════════════════════════════ -->
+<div class="section-wrap">
+  <div class="doc-label">Screen 10 — Notifications &amp; Alerts</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>Shows all active system alerts and lets administrators configure which events trigger notifications and where they are sent. Alerts appear both in this screen and as a badge on the Notifications sidebar menu item. Critical alerts (service stopped, folder inaccessible) should be configured to send email immediately.</p>
+    <ul>
+      <li><b>Active Alerts</b> — current unresolved issues that need attention (shown at the top)</li>
+      <li><b>Email Notification Settings</b> — configure who receives alerts and for which event types</li>
+      <li><b>Notification History</b> — log of all past alerts and when they were resolved</li>
+    </ul>
+  </div>
+</div>
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman</div>
+    <div class="oe2-userinfo"><span>User: <b>Mark Klein</b></span><span>Role: Admin</span><span><a href="#">Logout</a></span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Jobs</div><div class="oe2-tab">Proposals</div><div class="oe2-tab">Paint Cost</div>
+    <div class="oe2-tab active">Invoice OCR</div><div class="oe2-tab">Reports</div><div class="oe2-tab">Admin</div>
+  </div>
+  <div class="oe2-banner">
+    <div class="oe2-banner-icon">🔔</div>
+    <div class="oe2-banner-label">Invoice OCR — Notifications &amp; Alerts</div>
+    <div class="oe2-banner-sub">3 active alerts</div>
+  </div>
+  <div class="ocr-layout">
+    <div class="ocr-sidenav">
+      <div class="ocr-sidenav-section">Main</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📊</span> Dashboard</div>
+      <div class="ocr-sidenav-section">Invoices</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📋</span> Processing Queue <span class="ocr-nav-badge">11</span></div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📄</span> Invoice Management</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">👁️</span> Invoice Viewer</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">✏️</span> Manual Entry</div>
+      <div class="ocr-sidenav-section">Configuration</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📁</span> Folder Monitoring</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">🔧</span> OCR Settings</div>
+      <div class="ocr-sidenav-section">Reports</div>
+      <div class="ocr-nav-item"><span class="ocr-nav-icon">📝</span> Audit Logs</div>
+      <div class="ocr-nav-item active"><span class="ocr-nav-icon">🔔</span> Notifications <span class="ocr-nav-badge warn">3</span></div>
+    </div>
+    <div class="ocr-main">
+      <div class="breadcrumb"><a href="#">Dashboard</a><span class="sep">›</span><a href="#">Reports</a><span class="sep">›</span>Notifications &amp; Alerts</div>
+      <!-- Active Alerts -->
+      <div style="padding:10px 14px 0;">
+        <div style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:8px;">🔴 Active Alerts (3)</div>
+        <div style="border:1px solid #ffcdd2;border-radius:4px;overflow:hidden;margin-bottom:14px;">
+          <div class="alert-item" style="background:#fff5f5;border-left:4px solid #f44336;">
+            <div class="al-icon">❌</div>
+            <div class="al-body">
+              <div class="al-title">OCR Processing Failed — scan_broken.jpg</div>
+              <div class="al-sub">OCR engine returned confidence of 18% — below reject threshold. File moved to Failed folder. Manual entry may be required.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <div class="al-time">Today 11:32 AM</div>
+              <button class="oe2-btn btn-white" style="font-size:10px;">✕ Dismiss</button>
+            </div>
+          </div>
+          <div class="alert-item" style="background:#fffbf5;border-left:4px solid #ff9800;">
+            <div class="al-icon">⚠️</div>
+            <div class="al-body">
+              <div class="al-title">API Rate Limit — Azure Cognitive Services throttled</div>
+              <div class="al-sub">OCR API returned HTTP 429 at 10:12 AM. Processing was delayed 60 seconds. Check your Azure subscription tier if this recurs.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <div class="al-time">Today 10:12 AM</div>
+              <button class="oe2-btn btn-white" style="font-size:10px;">✕ Dismiss</button>
+            </div>
+          </div>
+          <div class="alert-item" style="background:#fffbf5;border-left:4px solid #ff9800;">
+            <div class="al-icon">🔍</div>
+            <div class="al-body">
+              <div class="al-title">5 Invoices Awaiting Manual Review</div>
+              <div class="al-sub">BM-45901, may_invoice_ruste.pdf, and 3 others have low-confidence fields and need user review before they can be approved.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <div class="al-time">Today 9:30 AM</div>
+              <button class="oe2-btn btn-orange" style="font-size:10px;">Review Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 14px;">
+        <!-- Alert Configuration -->
+        <div class="form-section">
+          <div class="form-section-hdr">⚙️ Alert Configuration — When to Notify</div>
+          <div class="form-body">
+            <table style="width:100%;font-size:12px;border-collapse:collapse;">
+              <thead><tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px 0;color:#555;font-size:11px;">Event</th><th class="center" style="width:60px;color:#555;font-size:11px;">In-App</th><th class="center" style="width:60px;color:#555;font-size:11px;">Email</th></tr></thead>
+              <tbody>
+                <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:7px 0;">Windows Service stopped</td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:7px 0;">Folder access error</td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:7px 0;">OCR processing failed</td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox"><span class="slider"></span></label></td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:7px 0;">Low confidence invoice</td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox"><span class="slider"></span></label></td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:7px 0;">API rate limit hit</td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:7px 0;">Invoice approved / linked</td><td class="center"><label class="toggle"><input type="checkbox"><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox"><span class="slider"></span></label></td></tr>
+                <tr><td style="padding:7px 0;">Daily summary digest</td><td class="center"><label class="toggle"><input type="checkbox"><span class="slider"></span></label></td><td class="center"><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Email Settings -->
+        <div class="form-section">
+          <div class="form-section-hdr">📧 Email Notification Settings</div>
+          <div class="form-body">
+            <div class="f-row"><label>SMTP Server</label><input class="f-inp w240" type="text" value="smtp.office365.com"/></div>
+            <div class="f-row"><label>SMTP Port</label><input class="f-inp w80" type="text" value="587"/></div>
+            <div class="f-row"><label>From Email</label><input class="f-inp w260" type="text" value="ocr-alerts@albertpearlman.com"/></div>
+            <div class="f-row"><label>Notify Recipients</label>
+              <div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px;">
+                  <span style="background:#e3f2fd;padding:2px 8px;border-radius:10px;display:flex;align-items:center;gap:4px;">mklein@albertpearlman.com <span style="cursor:pointer;color:#888;">✕</span></span>
+                  <span style="background:#e3f2fd;padding:2px 8px;border-radius:10px;display:flex;align-items:center;gap:4px;">admin@albertpearlman.com <span style="cursor:pointer;color:#888;">✕</span></span>
+                </div>
+                <input class="f-inp w260" type="text" placeholder="Add email address…"/>
+              </div>
+            </div>
+            <div class="f-row"><label>Daily Summary Time</label><input class="f-inp w100" type="time" value="08:00"/></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="oe2-btn btn-green">💾 Save Settings</button>
+              <button class="oe2-btn btn-white">📧 Send Test Email</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Notification History -->
+      <div style="padding:0 14px 14px;">
+        <div class="col-card">
+          <div class="col-card-hdr">📋 Notification History — Last 30 Days <button class="oe2-btn btn-gray" style="font-size:10px;margin-left:auto;">📥 Download</button></div>
+          <div style="overflow-x:auto;">
+            <table class="oe2-grid">
+              <thead><tr><th>Date / Time</th><th>Alert Type</th><th>Message</th><th>Sent To</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td class="muted" style="font-size:11px;">05/23 11:32 AM</td><td><span class="oe2-badge b-failed" style="font-size:10px;">OCR Failed</span></td><td style="font-size:12px;">scan_broken.jpg — confidence 18%</td><td class="muted" style="font-size:11px;">In-App only</td><td><span class="oe2-badge b-warning">⚠ Active</span></td></tr>
+                <tr><td class="muted" style="font-size:11px;">05/22 8:00 AM</td><td><span class="oe2-badge b-new" style="font-size:10px;">Daily Summary</span></td><td style="font-size:12px;">Daily summary: 28 processed, 1 failed, 2 review</td><td class="muted" style="font-size:11px;">mklein@, admin@</td><td><span class="oe2-badge b-approved">✓ Sent</span></td></tr>
+                <tr><td class="muted" style="font-size:11px;">05/21 3:15 PM</td><td><span class="oe2-badge b-warning" style="font-size:10px;">API Limit</span></td><td style="font-size:12px;">Azure throttled — HTTP 429 for 3 minutes</td><td class="muted" style="font-size:11px;">mklein@, admin@</td><td><span class="oe2-badge b-approved">✓ Resolved</span></td></tr>
+                <tr><td class="muted" style="font-size:11px;">05/20 9:01 AM</td><td><span class="oe2-badge b-new" style="font-size:10px;">Daily Summary</span></td><td style="font-size:12px;">Daily summary: 34 processed, 0 failed, 1 review</td><td class="muted" style="font-size:11px;">mklein@, admin@</td><td><span class="oe2-badge b-approved">✓ Sent</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<div style="text-align:center;font-size:11px;color:#999;margin:0 0 30px;border-top:1px solid #ddd;padding-top:12px;max-width:1300px;margin-left:auto;margin-right:auto;">
+  OE2 — Invoice OCR Automation Module · UI Design Specification · v1.0 · May 2026 · 10 Screens · Internal Use Only
+</div>
+</body>
+</html>
+
+

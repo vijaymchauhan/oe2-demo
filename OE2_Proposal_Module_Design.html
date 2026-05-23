@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OE2 – Proposal Module Design</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
+
+/* ── Doc labels & notes ──────────────────────────── */
+.doc-label{
+  background:#1e3a5f;color:#fff;font-size:13px;font-weight:700;
+  padding:7px 18px;margin:32px 0 0;border-radius:4px 4px 0 0;display:inline-block;
+}
+.doc-desc{
+  background:#fff;border:1px solid #c8dcf5;border-top:3px solid #2563eb;
+  border-radius:0 4px 4px 4px;
+  padding:14px 18px;font-size:12px;color:#222;margin:0 0 16px;line-height:1.8;
+}
+.doc-desc h4{font-size:13px;color:#1e3a5f;margin-bottom:6px;font-weight:700;}
+.doc-desc ul{padding-left:18px;margin:4px 0 8px;}
+.doc-desc ul li{margin-bottom:3px;}
+.doc-desc .field-tip{color:#555;font-size:11px;font-style:italic;}
+.doc-desc .status-chip{
+  display:inline-block;font-size:10px;font-weight:bold;
+  padding:1px 7px;border-radius:10px;margin:0 3px;
+}
+.sc-draft{background:#e8e8e8;color:#444;}
+.sc-sent{background:#cce5ff;color:#004085;}
+.sc-approved{background:#d4edda;color:#155724;}
+.sc-rejected{background:#f8d7da;color:#721c24;}
+
+/* ── Workflow overview ───────────────────────────── */
+.workflow-wrap{max-width:1200px;margin:24px auto 0;padding:0;}
+.workflow-box{
+  background:#fff;border:1px solid #c8dcf5;border-radius:6px;
+  overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.workflow-title{
+  background:#1e3a5f;color:#fff;padding:12px 20px;
+  font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.workflow-body{padding:18px 20px;}
+.workflow-steps{display:flex;gap:0;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;}
+.wstep{
+  flex:1;min-width:160px;text-align:center;position:relative;
+  padding:16px 12px 14px;
+}
+.wstep:not(:last-child)::after{
+  content:"→";position:absolute;right:-10px;top:50%;transform:translateY(-50%);
+  font-size:20px;color:#4a90d9;font-weight:bold;z-index:1;
+}
+.wstep-num{
+  width:34px;height:34px;border-radius:50%;background:#2563eb;color:#fff;
+  font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 8px;
+}
+.wstep-icon{font-size:22px;margin-bottom:6px;}
+.wstep-title{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:4px;}
+.wstep-desc{font-size:11px;color:#555;line-height:1.5;}
+.wstep-badge{
+  display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;
+  font-weight:bold;margin-top:4px;
+}
+
+.workflow-rules{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;
+  border-top:1px solid #e2e8f0;padding-top:16px;
+}
+.wrule{
+  background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #4a90d9;
+  border-radius:3px;padding:10px 14px;font-size:12px;
+}
+.wrule h5{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:5px;}
+.wrule ul{padding-left:16px;color:#374151;line-height:1.7;}
+
+/* ═══════════ OE2 CHROME ═══════════════════════════ */
+.oe2-app{
+  max-width:1200px;margin:0 auto 40px;
+  border:1px solid #aaa;background:#fff;
+  box-shadow:0 2px 12px rgba(0,0,0,.18);
+}
+.oe2-topbar{
+  background:#fff;padding:6px 12px 4px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid #ccc;
+}
+.oe2-logo{font-size:22px;font-weight:bold;color:#8B1A1A;}
+.oe2-userinfo{font-size:12px;color:#333;}
+.oe2-userinfo span{margin-left:14px;}
+.oe2-userinfo a{color:#1a5276;text-decoration:none;}
+.oe2-nav{display:flex;align-items:flex-end;padding:4px 6px 0;background:#fff;gap:2px;}
+.oe2-nav-home{
+  width:32px;height:28px;background:#fff;border:1px solid #aaa;
+  display:flex;align-items:center;justify-content:center;
+  margin-right:4px;cursor:pointer;border-radius:3px 3px 0 0;font-size:16px;
+}
+.oe2-tab{
+  padding:5px 18px;font-size:13px;font-weight:bold;
+  border:1px solid #aaa;border-bottom:none;
+  background:#e8e8e8;color:#333;cursor:pointer;border-radius:3px 3px 0 0;
+}
+.oe2-tab.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.oe2-banner{
+  background:linear-gradient(to right,#4a90d9,#5ba3e8);
+  padding:6px 14px;display:flex;align-items:center;gap:10px;min-height:52px;
+}
+.oe2-banner-icon{
+  width:34px;height:34px;background:#fff;border:1px solid #ccc;
+  display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:18px;
+}
+.oe2-banner-label{font-size:15px;font-weight:bold;color:#cc3300;}
+.oe2-content{padding:0;background:#fff;}
+.oe2-section-title{
+  color:#2563ae;font-size:13px;font-weight:bold;
+  padding:6px 14px 4px;border-bottom:1px solid #ddd;
+}
+.oe2-view-tabs{
+  display:flex;align-items:center;padding:4px 10px;
+  border-bottom:1px solid #ddd;background:#f7f7f7;gap:4px;
+}
+.oe2-view-tab{
+  padding:3px 18px;font-size:13px;border:1px solid #aaa;
+  background:#e8e8e8;color:#333;cursor:pointer;border-radius:2px;
+}
+.oe2-view-tab.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.oe2-active-section{margin-left:auto;font-size:12px;color:#555;}
+.oe2-active-section b{color:#cc3300;}
+
+/* Listing */
+.oe2-list-layout{display:flex;min-height:420px;}
+.oe2-sidebar{width:200px;flex-shrink:0;border-right:1px solid #ddd;background:#f9f9f9;padding:8px;}
+.oe2-search-header{
+  background:#4a90d9;color:#fff;font-size:12px;font-weight:bold;
+  padding:5px 8px;border-radius:3px;margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.oe2-search-input{
+  width:100%;height:26px;border:1px solid #bbb;padding:0 6px;
+  font-size:12px;margin-bottom:6px;border-radius:2px;background:#fff;color:#999;
+}
+.oe2-select{width:100%;height:26px;border:1px solid #bbb;padding:0 4px;font-size:12px;margin-bottom:6px;border-radius:2px;background:#fff;}
+.oe2-status-box{width:100%;border:1px solid #bbb;padding:4px 6px;font-size:11px;color:#444;margin-bottom:8px;background:#fff;border-radius:2px;line-height:1.8;}
+.oe2-btn-row{display:flex;gap:6px;margin-top:4px;}
+.oe2-btn{padding:3px 14px;font-size:12px;font-weight:bold;border:1px solid #aaa;border-radius:2px;cursor:pointer;}
+.oe2-btn-blue{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+.oe2-btn-white{background:#fff;color:#333;border-color:#aaa;}
+.oe2-btn-green{background:#2e7d32;color:#fff;border-color:#1b5e20;}
+.oe2-btn-red{background:#c62828;color:#fff;border-color:#b71c1c;}
+
+/* Grid */
+.oe2-grid-area{flex:1;overflow-x:auto;padding:10px 12px;}
+.oe2-grid{width:100%;border-collapse:collapse;font-size:12px;}
+.oe2-grid th{background:#fff;color:#111;font-weight:bold;padding:7px 10px;border-bottom:2px solid #4a90d9;text-align:left;white-space:nowrap;}
+.oe2-grid td{padding:6px 10px;border-bottom:1px solid #e8e8e8;vertical-align:top;}
+.oe2-grid tr:hover td{background:#eef4fb;}
+.oe2-grid .link{color:#8B1A1A;cursor:pointer;font-weight:bold;}
+.oe2-badge{display:inline-block;font-size:10px;font-weight:bold;padding:1px 7px;border-radius:10px;white-space:nowrap;}
+.badge-draft{background:#e8e8e8;color:#444;}
+.badge-sent{background:#cce5ff;color:#004085;}
+.badge-approved{background:#d4edda;color:#155724;}
+.badge-rejected{background:#f8d7da;color:#721c24;}
+
+/* Form */
+.oe2-form-area{padding:10px 16px;}
+.oe2-form-section-bar{
+  background:#e8e8e8;border:1px solid #ccc;
+  padding:5px 10px;font-size:13px;font-weight:bold;color:#222;
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;border-radius:2px;cursor:pointer;
+}
+.oe2-form-section-bar span{font-size:11px;color:#4a90d9;font-weight:normal;}
+.oe2-form-row{display:flex;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;}
+.oe2-field{display:flex;align-items:center;gap:6px;margin-right:18px;margin-bottom:4px;}
+.oe2-field label{font-size:12px;color:#222;white-space:nowrap;min-width:90px;}
+.oe2-field label.wide{min-width:130px;}
+.oe2-field label.narrow{min-width:50px;}
+.oe2-input{height:24px;border:1px solid #bbb;padding:0 6px;font-size:12px;background:#fff;border-radius:2px;}
+.oe2-input.w80{width:80px;} .oe2-input.w100{width:100px;} .oe2-input.w120{width:120px;}
+.oe2-input.w160{width:160px;} .oe2-input.w220{width:220px;} .oe2-input.w300{width:300px;}
+.oe2-input.placeholder{color:#999;}
+.oe2-input.auto-val{background:#e8f5e9;color:#1b5e20;font-weight:bold;border-color:#81c784;}
+.oe2-textarea{border:1px solid #bbb;padding:4px 6px;font-size:12px;background:#fff;border-radius:2px;resize:vertical;}
+.oe2-select-field{height:24px;border:1px solid #bbb;padding:0 4px;font-size:12px;background:#fff;border-radius:2px;}
+.oe2-select-field.w120{width:120px;} .oe2-select-field.w140{width:140px;}
+.oe2-radio-group{display:flex;gap:18px;align-items:center;}
+.oe2-radio{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;}
+
+/* Action bar */
+.oe2-action-bar{
+  background:#f0f6ff;border:1px solid #c8dcf5;border-radius:3px;
+  padding:8px 12px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.oe2-action-label{font-size:12px;color:#555;font-weight:bold;margin-right:4px;}
+
+/* Items */
+.oe2-items-wrap{margin:10px 0;}
+.oe2-items-table{width:100%;border-collapse:collapse;font-size:12px;}
+.oe2-items-table th{background:#4a90d9;color:#fff;padding:6px 8px;text-align:left;font-size:12px;}
+.oe2-items-table th.center{text-align:center;}
+.oe2-items-table td{padding:5px 8px;border-bottom:1px solid #ddd;vertical-align:middle;}
+.oe2-items-table td.center{text-align:center;}
+.oe2-items-table tr:nth-child(odd) td{background:#fff;}
+.oe2-items-table tr:nth-child(even) td{background:#f5f9ff;}
+.oe2-items-table .add-row td{background:#f0fff4;border-top:1px dashed #81c784;color:#2e7d32;font-weight:bold;cursor:pointer;padding:6px 8px;}
+.oe2-items-total{text-align:right;font-weight:bold;font-size:13px;color:#222;padding:6px 8px;border-top:2px solid #4a90d9;}
+.alt-chk{width:15px;height:15px;cursor:pointer;accent-color:#e07b00;}
+.alt-cell{text-align:center;vertical-align:middle;}
+
+/* Modal */
+.oe2-modal-backdrop{background:rgba(0,0,0,.45);padding:30px 20px;display:flex;align-items:flex-start;justify-content:center;min-height:560px;}
+.oe2-modal{background:#fff;width:600px;border:1px solid #aaa;box-shadow:0 4px 24px rgba(0,0,0,.3);border-radius:3px;overflow:hidden;}
+.oe2-modal-hdr{background:#4a90d9;color:#fff;padding:8px 14px;font-weight:bold;font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+.oe2-modal-body{padding:16px 18px;}
+.oe2-modal-ftr{background:#f7f7f7;border-top:1px solid #ddd;padding:10px 16px;display:flex;justify-content:flex-end;gap:8px;}
+.chk-row{display:flex;align-items:flex-start;gap:10px;padding:7px 6px;border-bottom:1px solid #eee;font-size:12px;}
+.chk-row:last-child{border-bottom:none;}
+.chk-box{width:15px;height:15px;border:1px solid #bbb;background:#fff;flex-shrink:0;margin-top:1px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:10px;}
+.chk-box.on{background:#4a90d9;border-color:#3a80c9;color:#fff;}
+.highlight-field{border:2px solid #e07b00!important;background:#fff8f0!important;}
+
+/* Print */
+.print-wrap{max-width:820px;margin:0 auto;background:#fff;border:1px solid #aaa;box-shadow:0 2px 12px rgba(0,0,0,.18);font-family:Arial,sans-serif;font-size:12px;}
+.print-header{border-bottom:2px solid #222;padding:14px 24px 10px;display:flex;align-items:flex-start;justify-content:space-between;}
+.print-co-name{font-size:17px;font-weight:bold;color:#222;margin-bottom:2px;}
+.print-co-sub{font-size:12px;color:#444;}
+.print-proposal-title{font-size:22px;font-weight:bold;letter-spacing:2px;color:#222;text-align:right;}
+.print-meta{padding:10px 24px;border-bottom:1px solid #ccc;}
+.print-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.print-meta-row{display:flex;gap:0;padding:3px 0;font-size:12px;}
+.print-meta-label{font-weight:bold;min-width:140px;color:#222;}
+.print-meta-val{color:#1a5276;border-bottom:1px solid #aaa;flex:1;min-width:160px;padding-bottom:1px;font-size:12px;}
+.print-meta-val.blank{color:#aaa;letter-spacing:1px;}
+.print-jobrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 24px;border-bottom:1px solid #ccc;border-top:1px solid #ccc;background:#f5f5f5;}
+.print-jobcol label{font-size:10px;font-weight:bold;text-transform:uppercase;color:#555;display:block;margin-bottom:2px;}
+.print-jobcol span{font-size:12px;color:#222;}
+.print-services-hdr{padding:10px 24px 0;}
+.print-services-hdr .title{font-size:13px;font-weight:bold;color:#222;margin-bottom:3px;}
+.print-services-hdr .sub{font-size:11px;color:#444;font-style:italic;}
+.print-items-table{width:100%;border-collapse:collapse;margin:6px 0;}
+.print-items-table th{border-top:1px solid #aaa;border-bottom:1px solid #aaa;padding:5px 8px;font-size:12px;text-align:left;font-weight:bold;background:#f0f0f0;}
+.print-items-table th.right{text-align:right;}
+.print-items-table th.center{text-align:center;}
+.print-items-table td{padding:5px 8px;font-size:12px;border-bottom:1px solid #e8e8e8;vertical-align:top;}
+.print-items-table td.right{text-align:right;}
+.print-items-table td.center{text-align:center;}
+.print-items-table tr:nth-child(even) td{background:#fafafa;}
+.alt-row td{color:#c05000!important;background:inherit!important;}
+.print-alt-chk{display:inline-block;width:14px;height:14px;border:1px solid #555;text-align:center;line-height:13px;font-size:11px;vertical-align:middle;}
+.print-alt-chk.checked{color:#222;}
+.print-exclusions{padding:8px 24px;border-top:1px solid #ccc;}
+.print-exclusions .title{font-size:12px;font-weight:bold;margin-bottom:3px;}
+.print-exclusions .content{font-size:11px;color:#444;line-height:1.5;}
+.print-notes{padding:4px 24px;font-size:10px;color:#666;font-style:italic;border-bottom:1px solid #ccc;}
+.print-footer{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:12px 24px;}
+.print-sig-label{font-size:12px;font-weight:bold;margin-bottom:10px;}
+.print-sig-line{border-bottom:1px solid #aaa;margin-bottom:6px;height:24px;}
+.print-sig-sub{font-size:10px;color:#666;}
+.print-totals{text-align:right;}
+.print-totals table{margin-left:auto;font-size:12px;border-collapse:collapse;}
+.print-totals td{padding:3px 6px;}
+.print-totals td:first-child{text-align:left;color:#555;}
+.print-totals td:last-child{text-align:right;font-weight:bold;color:#222;min-width:90px;}
+.print-totals .total-final td{font-size:14px;border-top:2px solid #222;padding-top:5px;}
+
+/* Tech */
+.tech-wrap{max-width:1200px;margin:32px auto;padding:0 16px;}
+.tech-card{background:#fff;border:1px solid #ccc;border-radius:4px;padding:16px 20px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.tech-card h3{font-size:14px;color:#1e3a5f;border-bottom:2px solid #4a90d9;padding-bottom:6px;margin-bottom:12px;}
+.tech-table{width:100%;border-collapse:collapse;font-size:12px;}
+.tech-table th{background:#1e3a5f;color:#fff;padding:6px 10px;text-align:left;}
+.tech-table td{padding:6px 10px;border-bottom:1px solid #eee;vertical-align:top;}
+.tech-table tr:nth-child(even) td{background:#f8fafc;}
+.tech-table td:first-child{font-family:Consolas,monospace;color:#1e3a5f;font-weight:600;}
+code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-radius:2px;font-size:11px;}
+.prop-num{color:#8B1A1A;font-weight:bold;}
+.page-title{max-width:1200px;margin:24px auto 0;padding:0 0 14px;display:flex;align-items:baseline;gap:14px;}
+.page-title h1{font-size:22px;color:#1e3a5f;font-weight:bold;}
+.page-title .sub{font-size:13px;color:#666;}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>OE2 — Proposal Module: Feature Design &amp; User Guide</h1>
+  <span class="sub">Albert Pearlman OE-2 &nbsp;·&nbsp; May 2026</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     WORKFLOW OVERVIEW
+     ══════════════════════════════════════════════════ -->
+<div class="workflow-wrap">
+<div class="workflow-box">
+  <div class="workflow-title">📋 &nbsp; How the Proposal Module Works — End-to-End Flow</div>
+  <div class="workflow-body">
+
+    <div class="workflow-steps">
+      <!-- Step 1 -->
+      <div class="wstep">
+        <div class="wstep-num">1</div>
+        <div class="wstep-icon">✏️</div>
+        <div class="wstep-title">Create Proposal</div>
+        <div class="wstep-desc">
+          User opens the Proposal tab and clicks <b>Add</b>. Selects an existing customer or types a prospect name. Fills in job details and adds line items with pricing. Saves as <span class="wstep-badge sc-draft">Draft</span>.
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="wstep">
+        <div class="wstep-num">2</div>
+        <div class="wstep-icon">📤</div>
+        <div class="wstep-title">Send to Customer</div>
+        <div class="wstep-desc">
+          User clicks <b>Print</b> or <b>Email</b> on the Edit screen to deliver the proposal. Status is updated to <span class="wstep-badge sc-sent">Sent</span> to track that the customer has received it.
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="wstep">
+        <div class="wstep-num">3</div>
+        <div class="wstep-icon">🔄</div>
+        <div class="wstep-title">Revise if Needed</div>
+        <div class="wstep-desc">
+          If the customer requests changes, user clicks <b>New Revision</b>. A copy is created with the next revision number (e.g., 10000.01 → 10000.02). The prior version is kept for history.
+        </div>
+      </div>
+      <!-- Step 4 -->
+      <div class="wstep">
+        <div class="wstep-num">4</div>
+        <div class="wstep-icon">✅</div>
+        <div class="wstep-title">Customer Approves</div>
+        <div class="wstep-desc">
+          Status is updated to <span class="wstep-badge sc-approved">Approved</span>. The <b>Convert to Job</b> button becomes available. If declined, status is set to <span class="wstep-badge sc-rejected">Rejected</span> and no job is created.
+        </div>
+      </div>
+      <!-- Step 5 -->
+      <div class="wstep">
+        <div class="wstep-num">5</div>
+        <div class="wstep-icon">🔄</div>
+        <div class="wstep-title">Convert to Job</div>
+        <div class="wstep-desc">
+          User clicks <b>Convert to Job</b>, enters the Customer Job #, and selects which line items to include. System creates the Job record(s) automatically and links them back to the proposal.
+        </div>
+      </div>
+      <!-- Step 6 -->
+      <div class="wstep">
+        <div class="wstep-num">6</div>
+        <div class="wstep-icon">📁</div>
+        <div class="wstep-title">Job(s) Created</div>
+        <div class="wstep-desc">
+          New Job(s) appear in the Jobs module with all billing details pre-filled from the proposal. The proposal record is marked as converted and shows the linked Job number(s).
+        </div>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="workflow-rules">
+      <div class="wrule">
+        <h5>📌 Proposal Numbering</h5>
+        <ul>
+          <li>New proposals are auto-numbered starting at <b>10000.00</b></li>
+          <li>Each revision increments the decimal: <b>10000.01, 10000.02…</b></li>
+          <li>The base number groups all revisions together in the listing</li>
+          <li>Proposal numbers and Job numbers share the same sequence so no number is ever duplicated</li>
+        </ul>
+      </div>
+      <div class="wrule">
+        <h5>📌 Convert to Job — Job Creation Rules</h5>
+        <ul>
+          <li><b>Single item selected</b> → Creates <b>1 Main Job</b> with that item's amount</li>
+          <li><b>Multiple items selected</b> → Creates <b>1 Main Job ($0.00)</b> + <b>1 Extra Job per item</b>, each with its own amount</li>
+          <li>Customer Job # entered in the modal is saved on every created Job record</li>
+          <li>ALT (Alternate) items are excluded from the printed Subtotal but can still be converted</li>
+        </ul>
+      </div>
+      <div class="wrule">
+        <h5>📌 Status Meanings</h5>
+        <ul>
+          <li><b>Draft</b> — Proposal is being prepared, not yet sent</li>
+          <li><b>Sent</b> — Delivered to customer, awaiting response</li>
+          <li><b>Approved</b> — Customer accepted; Convert to Job is now available</li>
+          <li><b>Rejected</b> — Customer declined; proposal is closed, no job created</li>
+        </ul>
+      </div>
+      <div class="wrule">
+        <h5>📌 Existing Customer vs. Prospect</h5>
+        <ul>
+          <li><b>Existing Customer</b> — Select from the OE2 customer database using the Lookup button</li>
+          <li><b>Prospect</b> — Type the customer's name as free text (they are not yet in the system). When they become a customer, the proposal can be linked later</li>
+          <li>All proposals — whether for existing customers or prospects — appear in the same listing</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 1 — PROPOSAL LISTING
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 1 — Proposal Listing Page</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>This is the main entry point for the Proposal module. It shows all proposals in a searchable, scrollable grid. Users can find any proposal quickly by searching on Proposal #, Customer Name, Customer Job #, Customer PO #, or Project Manager. The Status filter lets users see only Drafts, Sent, Approved, or Rejected proposals at a glance.</p>
+    <br/>
+    <h4>How to use it</h4>
+    <ul>
+      <li>Click the <b>Proposal</b> tab in the main navigation to open this screen.</li>
+      <li>Use the <b>Search Proposals</b> sidebar on the left to filter the list. Enter one or more search fields and click <b>Search</b>. Click <b>Clear</b> to reset all filters.</li>
+      <li>Click any <b>Proposal #</b> link in the grid (shown in dark red) to open that proposal for editing.</li>
+      <li>Click <b>Add</b> (List/Add tab) to create a brand-new proposal.</li>
+    </ul>
+    <br/>
+    <h4>Grid columns explained</h4>
+    <ul>
+      <li><b>Proposal Date</b> — The date the proposal was originally created.</li>
+      <li><b>Proposal #</b> — Unique number in the format <b>NNNNN.RR</b> where RR is the revision number (00 = original, 01 = first revision, etc.). Click to open and edit.</li>
+      <li><b>Customer Name</b> — The customer or prospect this proposal was written for.</li>
+      <li><b>Job Name / Description</b> — The project name and scope summary.</li>
+      <li><b>Status</b> — Current state of the proposal: <span class="status-chip sc-draft">Draft</span> <span class="status-chip sc-sent">Sent</span> <span class="status-chip sc-approved">Approved</span> <span class="status-chip sc-rejected">Rejected</span></li>
+      <li><b>Total ($)</b> — The sum of all line items on the proposal (auto-calculated, not manually entered).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman OE-2</div>
+    <div class="oe2-userinfo">Welcome <b>Reliable</b><span>👤 <a>My Account</a></span><span>⏻ <a>Logout</a></span><span>📅 22 May 2026, 23:00</span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Job</div><div class="oe2-tab">Reports</div>
+    <div class="oe2-tab">Customer</div><div class="oe2-tab">Vendor</div>
+    <div class="oe2-tab active">Proposal</div>
+    <div class="oe2-tab">Settings</div><div class="oe2-tab">OE1</div>
+  </div>
+  <div class="oe2-banner"><div class="oe2-banner-icon">📋</div><div class="oe2-banner-label">Proposals</div></div>
+  <div class="oe2-content">
+    <div class="oe2-section-title">Proposal Detail</div>
+    <div class="oe2-view-tabs">
+      <div class="oe2-view-tab active">List</div>
+      <div class="oe2-view-tab">Add</div>
+      <div class="oe2-active-section">Active Section : <b>Proposals</b></div>
+    </div>
+    <div class="oe2-list-layout">
+      <div class="oe2-sidebar">
+        <div class="oe2-search-header">📋 Search Proposals</div>
+        <input class="oe2-search-input" placeholder="Enter Proposal#" readonly/>
+        <input class="oe2-search-input" placeholder="Enter Customer Name" readonly/>
+        <input class="oe2-search-input" placeholder="Enter Customer Job#" readonly/>
+        <input class="oe2-search-input" placeholder="Enter Customer PO#" readonly/>
+        <select class="oe2-select"><option>All Project Manager</option></select>
+        <div class="oe2-status-box">
+          <div>☑ Draft</div><div>☑ Sent</div><div>☑ Approved</div><div>☑ Rejected</div>
+        </div>
+        <div class="oe2-btn-row">
+          <button class="oe2-btn oe2-btn-white">Clear</button>
+          <button class="oe2-btn oe2-btn-blue">Search</button>
+        </div>
+      </div>
+      <div class="oe2-grid-area">
+        <table class="oe2-grid">
+          <thead>
+            <tr>
+              <th>Proposal Date</th><th>Proposal #</th><th>Customer Name</th>
+              <th>Job Name / Description</th><th>Status</th><th>Total ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>05/20/2026</td><td class="link">10000.00</td><td>HINES – 750</td><td>National Australia Bank – Repainting</td><td><span class="oe2-badge badge-draft">Draft</span></td><td>$24,500.00</td></tr>
+            <tr><td>05/22/2026</td><td class="link">10000.01</td><td>HINES – 750</td><td>National Australia Bank – Repainting (Rev 1)</td><td><span class="oe2-badge badge-sent">Sent</span></td><td>$26,000.00</td></tr>
+            <tr><td>05/19/2026</td><td class="link">10001.00</td><td>OBRA</td><td>Prep and Paint – Lobby</td><td><span class="oe2-badge badge-approved">Approved</span></td><td>$8,750.00</td></tr>
+            <tr><td>05/18/2026</td><td class="link">10002.00</td><td>SWINERTON BUILDERS</td><td>Amazon – 6th Floor Repaint</td><td><span class="oe2-badge badge-rejected">Rejected</span></td><td>$3,200.00</td></tr>
+            <tr><td>05/17/2026</td><td class="link">10003.00</td><td>Versatile Services LLC</td><td>Cafe – Touch Up</td><td><span class="oe2-badge badge-draft">Draft</span></td><td>$1,100.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 2 — CREATE PROPOSAL
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 2 — Create / Add New Proposal</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>This screen is used to write a new proposal for a customer or a prospective client. The system automatically assigns the next Proposal Number (shown in green, e.g., <b>10004.00</b>). The user fills in the customer, job location, scope of work, and adds individual line items with pricing. The total is calculated automatically from the items — no manual amount entry needed.</p>
+    <br/>
+    <h4>Step-by-step: How to create a proposal</h4>
+    <ul>
+      <li><b>Step 1 — Choose Customer Type:</b> Select <b>Existing Customer</b> and use the Lookup button to find them in OE2, <i>or</i> select <b>Prospect (New)</b> and type their name directly — no lookup required for prospects.</li>
+      <li><b>Step 2 — Fill in Job Details:</b> Enter Job Name, Floor, Address, City, State, Zip, and a Description of the scope of work. These fields will also appear on the printed proposal.</li>
+      <li><b>Step 3 — Set Status &amp; Tax:</b> Status starts as <b>Draft</b>. Select the correct Tax Code (e.g., NYC – 8.875%). Update Status to <b>Sent</b> after emailing or printing for the customer.</li>
+      <li><b>Step 4 — Add Line Items:</b> In the <b>Proposal Items</b> section, click <b>+ Add New Item</b> for each service being quoted. Enter the Description, Quantity, and Unit Price. The Total is calculated automatically. Use the <b>ALT *</b> checkbox to mark any item as an Alternate (excluded from the main subtotal on the printed proposal).</li>
+      <li><b>Step 5 — Save:</b> Click <b>Save Proposal</b> to save and return to the listing, or continue editing.</li>
+    </ul>
+    <br/>
+    <h4>Key field notes</h4>
+    <ul>
+      <li><b>Proposal # (auto)</b> — System-generated. Do not edit. Format: NNNNN.00 for new, NNNNN.01+ for revisions.</li>
+      <li><b>ALT * checkbox on items</b> — Marks a line item as an Alternate. On the printed proposal, ALT items appear separately and the standard subtotal note reads "*Subtotal excludes alternates."</li>
+      <li><b>Exclusions / Notes</b> — Standard exclusions like "removals, stripping, overtime" that print at the bottom of the proposal.</li>
+      <li><b>CPC</b> — Customer Project Contact. This is the person the proposal is addressed to ("ATTN:" on the printed proposal).</li>
+      <li><b>PM/Biller</b> — The estimator's name printed on the proposal as "Estimator."</li>
+    </ul>
+  </div>
+</div>
+
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman OE-2</div>
+    <div class="oe2-userinfo">Welcome <b>Reliable</b><span>👤 <a>My Account</a></span><span>⏻ <a>Logout</a></span><span>📅 22 May 2026, 23:00</span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Job</div><div class="oe2-tab">Reports</div>
+    <div class="oe2-tab">Customer</div><div class="oe2-tab">Vendor</div>
+    <div class="oe2-tab active">Proposal</div>
+    <div class="oe2-tab">Settings</div><div class="oe2-tab">OE1</div>
+  </div>
+  <div class="oe2-banner"><div class="oe2-banner-icon">📋</div><div class="oe2-banner-label">Proposals</div></div>
+  <div class="oe2-content">
+    <div class="oe2-section-title">Proposal Detail</div>
+    <div class="oe2-view-tabs">
+      <div class="oe2-view-tab">List</div>
+      <div class="oe2-view-tab active">Add</div>
+      <div class="oe2-active-section">Active Section : <b>Proposals</b></div>
+    </div>
+    <div class="oe2-form-area">
+      <div class="oe2-form-section-bar">Proposals <span>Hide ▲</span></div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field">
+          <label>Proposal #</label>
+          <input class="oe2-input w80 auto-val" value="10004.00" readonly/>
+        </div>
+        <div class="oe2-field" style="flex:1;max-width:520px;">
+          <label>Customer</label>
+          <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
+            <div class="oe2-radio-group">
+              <label class="oe2-radio"><input type="radio" name="ct" checked/> Existing Customer</label>
+              <label class="oe2-radio"><input type="radio" name="ct"/> Prospect (New)</label>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input class="oe2-input w300 placeholder" value="Select Customer…" readonly/>
+              <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 10px;">🔍 Lookup</button>
+            </div>
+          </div>
+        </div>
+        <div class="oe2-field" style="margin-left:auto;">
+          <label class="narrow">Proposal Date</label>
+          <input class="oe2-input w120" value="05/22/2026" readonly/>
+        </div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field" style="flex:1;max-width:400px;">
+          <label>Job Name</label>
+          <input class="oe2-input w300 placeholder" value="Enter job/project name" readonly/>
+        </div>
+        <div class="oe2-field" style="flex:1;">
+          <label>Description</label>
+          <textarea class="oe2-textarea" rows="3" style="width:380px;" placeholder="Enter scope of work / description…" readonly></textarea>
+        </div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Floor</label><input class="oe2-input w120 placeholder" value="Floor / Unit" readonly/></div>
+        <div class="oe2-field"><label>Job Address</label><input class="oe2-input w220 placeholder" value="Street address" readonly/></div>
+        <div class="oe2-field"><label class="narrow">City</label><input class="oe2-input w120 placeholder" value="City" readonly/></div>
+        <div class="oe2-field"><label class="narrow" style="min-width:34px;">State</label><input class="oe2-input w80" value="NY" readonly/></div>
+        <div class="oe2-field"><label class="narrow" style="min-width:28px;">Zip</label><input class="oe2-input w80 placeholder" value="Zip" readonly/></div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Status</label><select class="oe2-select-field w120"><option selected>Draft</option><option>Sent</option><option>Approved</option><option>Rejected</option></select></div>
+        <div class="oe2-field"><label>Tax Code</label><select class="oe2-select-field w140"><option>NYC – 8.875</option></select></div>
+        <div class="oe2-field"><label>Proj. Hours</label><input class="oe2-input w80" value="0.00" readonly/></div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Valid Until Date</label><input class="oe2-input w120 placeholder" value="Valid Until" readonly/></div>
+        <div class="oe2-field"><label>Est. Start Date</label><input class="oe2-input w120 placeholder" value="Start Date" readonly/></div>
+        <div class="oe2-field"><label>Est. End Date</label><input class="oe2-input w120 placeholder" value="End Date" readonly/></div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field" style="flex:1;max-width:340px;"><label class="wide">Customer PO / Change Order #</label><input class="oe2-input w220 placeholder" value="Customer PO/Change Order#" readonly/></div>
+        <div class="oe2-field" style="flex:1;max-width:280px;"><label class="wide">Customer Job #</label><input class="oe2-input w160 placeholder" value="Customer Job#" readonly/></div>
+        <div class="oe2-field" style="flex:1;"><label>Job Instruction</label><textarea class="oe2-textarea" rows="2" style="width:260px;" placeholder="Enter Job Instruction" readonly></textarea></div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label style="min-width:60px;">PM/Biller :</label><select class="oe2-select-field w120"><option>Select</option></select></div>
+        <div class="oe2-field"><label style="min-width:22px;">PS :</label><select class="oe2-select-field w120"><option>Select</option></select></div>
+        <div class="oe2-field"><label style="min-width:22px;">PE :</label><select class="oe2-select-field w120"><option>Select</option></select></div>
+        <div class="oe2-field"><label style="min-width:22px;">CPC :</label><select class="oe2-select-field w120"><option>Select</option></select></div>
+        <div class="oe2-field"><label>Project Type :</label><select class="oe2-select-field w120"><option>Select</option></select></div>
+      </div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field" style="flex:1;">
+          <label>Exclusions / Notes</label>
+          <textarea class="oe2-textarea" rows="2" style="width:600px;" placeholder="e.g. removals, stripping, extensive prep, repairs, scar patching, skimcoating, special finishes, window frames/mullions, overtime, touch ups." readonly></textarea>
+        </div>
+      </div>
+
+      <div class="oe2-form-section-bar" style="margin-top:14px;">Proposal Items <span>Hide ▲</span></div>
+      <div class="oe2-items-wrap">
+        <table class="oe2-items-table">
+          <thead>
+            <tr>
+              <th style="width:44%">Description</th>
+              <th style="width:8%" class="center">Qty</th>
+              <th style="width:14%">Unit Price ($)</th>
+              <th style="width:13%">Total ($)</th>
+              <th style="width:7%" class="center" title="Mark as Alternate — excluded from main subtotal on printed proposal">ALT *</th>
+              <th style="width:14%">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Site Preparation &amp; Grading" readonly/></td>
+              <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
+              <td><input class="oe2-input" style="width:90px;" value="8,000.00" readonly/></td>
+              <td><b>$8,000.00</b></td>
+              <td class="alt-cell"><input type="checkbox" class="alt-chk"/></td>
+              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
+            </tr>
+            <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Concrete Foundation Work" readonly/></td>
+              <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
+              <td><input class="oe2-input" style="width:90px;" value="12,000.00" readonly/></td>
+              <td><b>$12,000.00</b></td>
+              <td class="alt-cell"><input type="checkbox" class="alt-chk"/></td>
+              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
+            </tr>
+            <tr>
+              <td><input class="oe2-input" style="width:98%;" value="Electrical Rough-in (Alternate)" readonly/></td>
+              <td class="center"><input class="oe2-input w80" value="2" readonly/></td>
+              <td><input class="oe2-input" style="width:90px;" value="2,250.00" readonly/></td>
+              <td><b style="color:#e07b00;">$4,500.00 *</b></td>
+              <td class="alt-cell"><input type="checkbox" class="alt-chk" checked/></td>
+              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td>
+            </tr>
+            <tr class="add-row"><td colspan="6">＋ Add New Item</td></tr>
+          </tbody>
+        </table>
+        <div class="oe2-items-total">
+          Subtotal (excl. ALT): &nbsp;$20,000.00 &nbsp;&nbsp;|&nbsp;&nbsp;
+          ALT Items: &nbsp;$4,500.00 &nbsp;&nbsp;|&nbsp;&nbsp;
+          <span style="font-size:14px;">Proposal Total : &nbsp; $24,500.00</span>
+        </div>
+        <div style="font-size:11px;color:#888;padding:4px 8px;">* Items marked ALT are Alternates — excluded from the main Subtotal on the printed proposal per standard format.</div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;padding-bottom:16px;">
+        <button class="oe2-btn oe2-btn-white">Cancel</button>
+        <button class="oe2-btn oe2-btn-blue">💾 Save Proposal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 3 — EDIT PROPOSAL
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 3 — Edit Proposal (Action Buttons)</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>This is the same form as Create Proposal, but it is opened by clicking an existing Proposal # from the listing. In addition to editing all proposal fields, this screen shows an <b>Actions toolbar</b> at the top with four key buttons. These buttons drive the full proposal lifecycle.</p>
+    <br/>
+    <h4>Action buttons explained</h4>
+    <ul>
+      <li>
+        <b>📄 New Revision</b> — Creates a copy of this proposal with the next revision number (e.g., 10000.01 becomes 10000.02). The current version is preserved as a historical record and becomes read-only. Use this when the customer requests changes to an already-sent proposal.
+      </li>
+      <li>
+        <b>🔄 Convert to Job</b> — Only available when Status is <b>Approved</b>. Opens the Convert to Job dialog where the user selects which line items to carry over to billing and enters the Customer Job #. The system then creates the Job record(s) automatically. See Screen 4 for full details.
+      </li>
+      <li>
+        <b>🖨️ Print</b> — Generates the formatted Albert Pearlman proposal document (matching the standard company proposal format). All fields from the proposal are automatically populated. The print layout is shown in Screen 5.
+      </li>
+      <li>
+        <b>✉️ Email</b> — Sends the proposal as a PDF attachment to the customer's email address on file. The email uses the standard company template. Status should be updated to <b>Sent</b> after emailing.
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="oe2-app">
+  <div class="oe2-topbar">
+    <div class="oe2-logo">Albert Pearlman OE-2</div>
+    <div class="oe2-userinfo">Welcome <b>Reliable</b><span>👤 <a>My Account</a></span><span>⏻ <a>Logout</a></span><span>📅 22 May 2026, 23:01</span></div>
+  </div>
+  <div class="oe2-nav">
+    <div class="oe2-nav-home">🏠</div>
+    <div class="oe2-tab">Job</div><div class="oe2-tab">Reports</div>
+    <div class="oe2-tab">Customer</div><div class="oe2-tab">Vendor</div>
+    <div class="oe2-tab active">Proposal</div>
+    <div class="oe2-tab">Settings</div><div class="oe2-tab">OE1</div>
+  </div>
+  <div class="oe2-banner"><div class="oe2-banner-icon">📋</div><div class="oe2-banner-label">Proposals</div></div>
+  <div class="oe2-content">
+    <div class="oe2-section-title">Proposal Detail</div>
+    <div class="oe2-view-tabs">
+      <div class="oe2-view-tab">List</div>
+      <div class="oe2-view-tab active">Edit</div>
+      <div class="oe2-active-section">Active Section : <b>Proposals</b></div>
+    </div>
+    <div class="oe2-form-area">
+
+      <div class="oe2-action-bar">
+        <span class="oe2-action-label">Actions :</span>
+        <button class="oe2-btn oe2-btn-white">📄 New Revision</button>
+        <button class="oe2-btn oe2-btn-green">🔄 Convert to Job</button>
+        <button class="oe2-btn oe2-btn-white">🖨️ Print</button>
+        <button class="oe2-btn oe2-btn-white">✉️ Email</button>
+        <span style="margin-left:auto;font-size:12px;color:#555;">
+          Proposal <b class="prop-num">10001.00</b> &nbsp;|&nbsp;
+          Status: <span class="oe2-badge badge-approved">Approved</span>
+        </span>
+      </div>
+
+      <div class="oe2-form-section-bar">Proposals <span>Hide ▲</span></div>
+
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Proposal #</label><input class="oe2-input w80 auto-val" value="10001.00" readonly/></div>
+        <div class="oe2-field" style="flex:1;max-width:500px;"><label>Customer</label><input class="oe2-input w300" value="OBRA" readonly/><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 10px;">🔍 Change</button></div>
+        <div class="oe2-field" style="margin-left:auto;"><label class="narrow">Proposal Date</label><input class="oe2-input w120" value="05/19/2026" readonly/></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field" style="flex:1;max-width:400px;"><label>Job Name</label><input class="oe2-input w300" value="Prep and Paint – Lobby" readonly/></div>
+        <div class="oe2-field" style="flex:1;"><label>Description</label><textarea class="oe2-textarea" rows="3" style="width:380px;" readonly>Prepare and paint lobby walls, ceiling and doors. Two coats of approved paint.</textarea></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Floor</label><input class="oe2-input w120" value="Lobby" readonly/></div>
+        <div class="oe2-field"><label>Job Address</label><input class="oe2-input w220" value="437 Madison Avenue" readonly/></div>
+        <div class="oe2-field"><label class="narrow">City</label><input class="oe2-input w120" value="New York" readonly/></div>
+        <div class="oe2-field"><label class="narrow" style="min-width:34px;">State</label><input class="oe2-input w80" value="NY" readonly/></div>
+        <div class="oe2-field"><label class="narrow" style="min-width:28px;">Zip</label><input class="oe2-input w80" value="10022" readonly/></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Status</label><select class="oe2-select-field w120"><option>Draft</option><option>Sent</option><option selected>Approved</option><option>Rejected</option></select></div>
+        <div class="oe2-field"><label>Tax Code</label><select class="oe2-select-field w140"><option>NYC – 8.875</option></select></div>
+        <div class="oe2-field"><label>Proj. Hours</label><input class="oe2-input w80" value="0.00" readonly/></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label>Valid Until Date</label><input class="oe2-input w120" value="06/19/2026" readonly/></div>
+        <div class="oe2-field"><label>Est. Start Date</label><input class="oe2-input w120" value="05/25/2026" readonly/></div>
+        <div class="oe2-field"><label>Est. End Date</label><input class="oe2-input w120" value="06/10/2026" readonly/></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field" style="flex:1;max-width:340px;"><label class="wide">Customer PO / Change Order #</label><input class="oe2-input w220 placeholder" value="Customer PO/Change Order#" readonly/></div>
+        <div class="oe2-field" style="flex:1;max-width:280px;"><label class="wide">Customer Job #</label><input class="oe2-input w160 placeholder" value="Customer Job#" readonly/></div>
+        <div class="oe2-field" style="flex:1;"><label>Job Instruction</label><textarea class="oe2-textarea" rows="2" style="width:260px;" placeholder="Enter Job Instruction" readonly></textarea></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field"><label style="min-width:60px;">PM/Biller :</label><select class="oe2-select-field w120"><option>Mark Klein</option></select></div>
+        <div class="oe2-field"><label style="min-width:22px;">PS :</label><select class="oe2-select-field w120"><option>Paulee Castell</option></select></div>
+        <div class="oe2-field"><label style="min-width:22px;">PE :</label><select class="oe2-select-field w120"><option>Paulee Castell</option></select></div>
+        <div class="oe2-field"><label style="min-width:22px;">CPC :</label><select class="oe2-select-field w120"><option>Steve</option></select></div>
+        <div class="oe2-field"><label>Project Type :</label><select class="oe2-select-field w120"><option>Select</option></select></div>
+      </div>
+      <div class="oe2-form-row">
+        <div class="oe2-field" style="flex:1;"><label>Exclusions / Notes</label><textarea class="oe2-textarea" rows="2" style="width:600px;" readonly>removals, stripping, extensive prep, repairs, scar patching, skimcoating, special finishes, window frames/mullions, overtime, touch ups.</textarea></div>
+      </div>
+
+      <div class="oe2-form-section-bar" style="margin-top:14px;">Proposal Items <span>Hide ▲</span></div>
+      <div class="oe2-items-wrap">
+        <table class="oe2-items-table">
+          <thead><tr><th style="width:44%">Description</th><th style="width:8%" class="center">Qty</th><th style="width:14%">Unit Price ($)</th><th style="width:13%">Total ($)</th><th style="width:7%" class="center">ALT *</th><th style="width:14%">Action</th></tr></thead>
+          <tbody>
+            <tr><td><input class="oe2-input" style="width:98%;" value="Lobby Wall Preparation" readonly/></td><td class="center"><input class="oe2-input w80" value="1" readonly/></td><td><input class="oe2-input" style="width:90px;" value="3,500.00" readonly/></td><td><b>$3,500.00</b></td><td class="alt-cell"><input type="checkbox" class="alt-chk"/></td><td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td></tr>
+            <tr><td><input class="oe2-input" style="width:98%;" value="Ceiling Paint – 2 Coats" readonly/></td><td class="center"><input class="oe2-input w80" value="1" readonly/></td><td><input class="oe2-input" style="width:90px;" value="3,250.00" readonly/></td><td><b>$3,250.00</b></td><td class="alt-cell"><input type="checkbox" class="alt-chk"/></td><td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td></tr>
+            <tr><td><input class="oe2-input" style="width:98%;" value="Door Refinishing (Alternate)" readonly/></td><td class="center"><input class="oe2-input w80" value="2" readonly/></td><td><input class="oe2-input" style="width:90px;" value="1,000.00" readonly/></td><td><b style="color:#e07b00;">$2,000.00 *</b></td><td class="alt-cell"><input type="checkbox" class="alt-chk" checked/></td><td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-red" style="font-size:11px;padding:2px 8px;">Delete</button></td></tr>
+            <tr class="add-row"><td colspan="6">＋ Add New Item</td></tr>
+          </tbody>
+        </table>
+        <div class="oe2-items-total">Subtotal (excl. ALT): &nbsp;$6,750.00 &nbsp;&nbsp;|&nbsp;&nbsp; ALT Items: &nbsp;$2,000.00 &nbsp;&nbsp;|&nbsp;&nbsp; <span style="font-size:14px;">Proposal Total : &nbsp; $8,750.00</span></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;padding-bottom:16px;">
+        <button class="oe2-btn oe2-btn-white">Cancel</button>
+        <button class="oe2-btn oe2-btn-blue">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 4 — CONVERT TO JOB
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 4 — Convert Proposal to Job (Modal)</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>This dialog opens when the user clicks <b>Convert to Job</b> on an <b>Approved</b> proposal. It lets the user choose which line items should be carried over into the Jobs module for billing, and enter the Customer's own job reference number. The system then creates the Job record(s) automatically.</p>
+    <br/>
+    <h4>Job creation rules — important</h4>
+    <ul>
+      <li>
+        <b>If 1 item is selected:</b> The system creates <b>one Main Job</b> with that item's description and amount. The Job number will be the same base number as the proposal (e.g., Proposal 10001.00 → Job 10001).
+      </li>
+      <li>
+        <b>If 2 or more items are selected:</b> The system creates <b>one Main Job with Amount $0.00</b> (the parent/container job) plus <b>one Extra Job for each selected item</b> — each Extra Job carries its own description and amount. This keeps individual billing lines separate and traceable.
+      </li>
+    </ul>
+    <br/>
+    <h4>How to use it</h4>
+    <ul>
+      <li><b>Step 1</b> — Enter the <b>Customer Job #</b> (the reference number assigned by the customer). This is saved on all created Job records.</li>
+      <li><b>Step 2</b> — Check the items you want to include in billing. Uncheck any items you do not want converted (e.g., items not yet approved by the customer).</li>
+      <li><b>Step 3</b> — Review the <b>"Jobs to be Created"</b> summary at the bottom to confirm what will be created.</li>
+      <li><b>Step 4</b> — Click <b>Create Jobs</b>. The system creates all Job records and links them back to this proposal. The proposal status does not change — it remains Approved for reference.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="oe2-app">
+  <div class="oe2-topbar"><div class="oe2-logo">Albert Pearlman OE-2</div><div class="oe2-userinfo">Welcome <b>Reliable</b><span>👤 <a>My Account</a></span></div></div>
+  <div class="oe2-nav"><div class="oe2-nav-home">🏠</div><div class="oe2-tab">Job</div><div class="oe2-tab active">Proposal</div><div class="oe2-tab">Customer</div></div>
+  <div class="oe2-banner"><div class="oe2-banner-icon">📋</div><div class="oe2-banner-label">Proposals</div></div>
+  <div class="oe2-content">
+    <div class="oe2-modal-backdrop">
+      <div class="oe2-modal">
+        <div class="oe2-modal-hdr">🔄 Convert Proposal to Job <span style="font-weight:normal;font-size:12px;opacity:.8;">Proposal # 10001.00</span></div>
+        <div class="oe2-modal-body">
+
+          <div style="background:#fff8f0;border:1px solid #e07b00;border-left:4px solid #e07b00;border-radius:3px;padding:10px 14px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:bold;color:#c06000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">★ Customer Job #</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <label style="font-size:12px;font-weight:bold;color:#222;min-width:130px;">Customer Job # <span style="color:#c00;">*</span></label>
+              <input class="oe2-input w160 highlight-field" value="CJ-2026-0441" readonly/>
+            </div>
+            <div style="font-size:11px;color:#8B4513;">The customer's own job reference number. Saved on all created Job records.</div>
+          </div>
+
+          <div style="background:#e8f0fe;border:1px solid #93c5fd;border-left:4px solid #2563eb;border-radius:3px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.7;color:#1e3a5f;">
+            <b>ℹ️ Job Creation Rules:</b><br/>
+            <b>1 item selected</b> → Creates <b>1 Main Job</b> with that item's amount.<br/>
+            <b>2+ items selected</b> → Creates <b>1 Main Job ($0.00)</b> + <b>1 Extra Job per selected item</b>.
+          </div>
+
+          <div style="font-size:12px;font-weight:bold;color:#1e3a5f;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">
+            Select Items for Job Billing
+            <span style="float:right;font-size:11px;color:#666;font-weight:normal;text-transform:none;letter-spacing:0;">2 selected → Main Job + 2 Extra Jobs</span>
+          </div>
+
+          <div class="chk-row" style="background:#f0fff4;border-radius:3px;">
+            <div class="chk-box on">✓</div>
+            <div style="flex:1;"><b>Lobby Wall Preparation</b><div style="color:#666;font-size:11px;">Qty: 1 · Unit: $3,500.00</div></div>
+            <div style="text-align:right;"><div style="font-weight:bold;">$3,500.00</div><div style="font-size:10px;color:#16a34a;">→ Extra Job #1</div></div>
+          </div>
+          <div class="chk-row" style="background:#f0fff4;border-radius:3px;">
+            <div class="chk-box on">✓</div>
+            <div style="flex:1;"><b>Ceiling Paint – 2 Coats</b><div style="color:#666;font-size:11px;">Qty: 1 · Unit: $3,250.00</div></div>
+            <div style="text-align:right;"><div style="font-weight:bold;">$3,250.00</div><div style="font-size:10px;color:#16a34a;">→ Extra Job #2</div></div>
+          </div>
+          <div class="chk-row">
+            <div class="chk-box"></div>
+            <div style="flex:1;"><b>Door Refinishing</b> <span style="font-size:10px;background:#fff3cd;color:#856404;padding:1px 5px;border-radius:8px;margin-left:4px;">ALT</span><div style="color:#aaa;font-size:11px;">Not selected</div></div>
+            <div style="color:#aaa;font-size:12px;">$2,000.00</div>
+          </div>
+
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:3px;padding:10px 12px;margin-top:10px;font-size:12px;">
+            <div style="font-weight:bold;color:#1e3a5f;margin-bottom:6px;">Jobs to be Created:</div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #e8e8e8;"><span>📁 Main Job (10001) — Prep and Paint – Lobby</span><span style="font-weight:bold;color:#888;">$0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #e8e8e8;"><span>📄 Extra Job #1 — Lobby Wall Preparation</span><span style="font-weight:bold;">$3,500.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;"><span>📄 Extra Job #2 — Ceiling Paint – 2 Coats</span><span style="font-weight:bold;">$3,250.00</span></div>
+            <div style="border-top:2px solid #4a90d9;margin-top:6px;padding-top:6px;text-align:right;font-weight:bold;">Total Billing : &nbsp; $6,750.00</div>
+          </div>
+
+        </div>
+        <div class="oe2-modal-ftr">
+          <button class="oe2-btn oe2-btn-white">Cancel</button>
+          <button class="oe2-btn oe2-btn-green">✅ Create Jobs</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 5 — PRINT PREVIEW
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 5 — Proposal Print Preview</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>Clicking <b>Print</b> on the Edit screen opens a formatted, print-ready proposal document. This matches the standard Albert Pearlman proposal format exactly. All fields are automatically populated from the proposal record — the user does not need to re-enter anything. The document can be printed directly or saved as a PDF to email to the customer.</p>
+    <br/>
+    <h4>How fields map from OE2 to the printed proposal</h4>
+    <ul>
+      <li><b>ATTN</b> — From the <b>CPC</b> (Customer Project Contact) field on the proposal</li>
+      <li><b>Company</b> — From the <b>Customer Name</b> (or Prospect Name) field</li>
+      <li><b>Address / City, State, Zip</b> — From the <b>Job Address, City, State, Zip</b> fields</li>
+      <li><b>Date</b> — From the <b>Proposal Date</b> field</li>
+      <li><b>WO# / PO#</b> — From the <b>Customer PO / Change Order #</b> field</li>
+      <li><b>AP#</b> — From the <b>Proposal #</b> (e.g., 10001.00)</li>
+      <li><b>Estimator</b> — From the <b>PM/Biller</b> field</li>
+      <li><b>Job Name / Floor / Job Detail</b> — From the corresponding form fields</li>
+      <li><b>Line items</b> — Each row from <b>Proposal Items</b> appears as a line with its Amount</li>
+      <li><b>ALT * column</b> — Items with the ALT checkbox checked are flagged with a ✓ in the ALT column and their amount is excluded from the Subtotal</li>
+      <li><b>Exclusions / Notes</b> — From the <b>Exclusions / Notes</b> text field</li>
+      <li><b>Subtotal / Tax / Total</b> — Auto-calculated: Subtotal = sum of non-ALT items; Tax = Subtotal × Tax Code rate; Total = Subtotal + Tax</li>
+    </ul>
+  </div>
+</div>
+
+<div style="max-width:1200px;margin:0 auto 40px;padding:0 16px;">
+<div class="print-wrap">
+  <div class="print-header">
+    <div><div class="print-co-name">Albert Pearlman, Inc.</div><div class="print-co-sub">The Painting Contractor &nbsp;·&nbsp; Established 1906</div></div>
+    <div class="print-proposal-title">PROPOSAL</div>
+  </div>
+  <div class="print-meta">
+    <div class="print-meta-grid">
+      <div>
+        <div class="print-meta-row"><span class="print-meta-label">ATTN :</span><span class="print-meta-val">Steve</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">Company :</span><span class="print-meta-val">OBRA</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">Address :</span><span class="print-meta-val">437 Madison Avenue</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">City, State, Zip :</span><span class="print-meta-val">New York, NY 10022</span></div>
+      </div>
+      <div>
+        <div class="print-meta-row"><span class="print-meta-label">Date :</span><span class="print-meta-val">05/19/2026</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">WO# / PO# :</span><span class="print-meta-val blank">—</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">AP# :</span><span class="print-meta-val">10001.00</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">CO :</span><span class="print-meta-val blank">—</span></div>
+        <div class="print-meta-row"><span class="print-meta-label">Estimator :</span><span class="print-meta-val">Mark Klein</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="print-jobrow">
+    <div class="print-jobcol"><label>Job Name</label><span>Prep and Paint – Lobby</span></div>
+    <div class="print-jobcol"><label>Job Address / Floor</label><span>437 Madison Ave / Lobby</span></div>
+    <div class="print-jobcol"><label>Job Detail</label><span>Prepare and paint lobby walls, ceiling and doors.</span></div>
+  </div>
+  <div class="print-services-hdr" style="padding:10px 24px 0;">
+    <div class="title">DESCRIPTION OF SERVICES</div>
+    <div class="sub">Please accept our proposal for supplying all labor, material, equipment, and insurance for the following:</div>
+  </div>
+  <div style="padding:0 24px;">
+    <table class="print-items-table" style="width:100%;">
+      <thead><tr><th style="width:80%">Description</th><th class="center" style="width:8%">ALT *</th><th class="right" style="width:12%">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Lobby Wall Preparation</td><td class="center"><span class="print-alt-chk">&nbsp;</span></td><td class="right">$3,500.00</td></tr>
+        <tr><td>Ceiling Paint – 2 Coats</td><td class="center"><span class="print-alt-chk">&nbsp;</span></td><td class="right">$3,250.00</td></tr>
+        <tr class="alt-row"><td>Door Refinishing</td><td class="center"><span class="print-alt-chk checked">✓</span></td><td class="right">$2,000.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="print-exclusions">
+    <div class="title">EXCLUSIONS / NOTES</div>
+    <div class="content">removals, stripping, extensive prep, repairs, scar patching, skimcoating, special finishes, window frames/mullions, overtime, touch ups.</div>
+  </div>
+  <div class="print-notes">*Subtotal and total tax excludes alternates. &nbsp;**This estimate valid for 60 days. Deposits required for all wallcovering and fabric panels.</div>
+  <div class="print-footer">
+    <div>
+      <div class="print-sig-label">Please accept our proposal by signing below:</div>
+      <div style="margin-top:28px;"><div class="print-sig-line"></div><div class="print-sig-sub">Name / Date</div></div>
+      <div style="margin-top:16px;"><div class="print-sig-line"></div><div class="print-sig-sub">Signature</div></div>
+    </div>
+    <div class="print-totals">
+      <table>
+        <tr><td>Subtotal :</td><td>$ 6,750.00</td></tr>
+        <tr><td>NYC Tax Rate :</td><td>8.875%</td></tr>
+        <tr><td>Total Tax :</td><td>$ 599.06</td></tr>
+        <tr class="total-final"><td><b>TOTAL :</b></td><td><b>$ 7,349.06</b></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div style="text-align:center;font-size:11px;color:#999;margin:0 0 30px;border-top:1px solid #ddd;padding-top:12px;max-width:1200px;margin-left:auto;margin-right:auto;">
+  OE2 — Proposal Module Feature Design &nbsp;·&nbsp; v3.0 &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; Internal review only
+</div>
+</body>
+</html>

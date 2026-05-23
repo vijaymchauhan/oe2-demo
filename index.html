@@ -1,1079 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>OE2 – Proposal Module Design</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OE2 – Module Navigation</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-/* ── Reset ───────────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+    }
 
-/* ── Shared label for section headings ──────────── */
-.doc-label{
-  background:#1e3a5f;color:#fff;font-size:13px;font-weight:700;
-  padding:6px 16px;margin:32px 0 12px;border-radius:4px;
-  display:inline-block;
-}
-.doc-note{
-  background:#fff8dc;border:1px solid #e6c84a;border-radius:4px;
-  padding:8px 14px;font-size:12px;color:#5a4000;margin:0 0 14px;
-  line-height:1.6;
-}
+    body{
+        font-family:'Inter',sans-serif;
+        background:#f4f7fb;
+        color:#1e293b;
+        padding:40px;
+    }
 
-/* ════════════════════════════════════════════════
-   OE2 CHROME
-   ════════════════════════════════════════════════ */
+    .container{
+        max-width:1000px;
+        margin:auto;
+    }
 
-/* App wrapper */
-.oe2-app{
-  max-width:1200px;margin:24px auto 40px;
-  border:1px solid #aaa;background:#fff;
-  box-shadow:0 2px 12px rgba(0,0,0,.18);
-}
+    .page-title{
+        margin-bottom:35px;
+    }
 
-/* Top header bar */
-.oe2-topbar{
-  background:#fff;padding:6px 12px 4px;
-  display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid #ccc;
-}
-.oe2-logo{font-size:22px;font-weight:bold;color:#8B1A1A;font-family:'Arial',sans-serif;}
-.oe2-userinfo{font-size:12px;color:#333;}
-.oe2-userinfo span{margin-left:14px;}
-.oe2-userinfo a{color:#1a5276;text-decoration:none;}
+    .page-title h1{
+        font-size:34px;
+        font-weight:700;
+        margin-bottom:10px;
+        color:#0f172a;
+    }
 
-/* Main nav tabs */
-.oe2-nav{
-  display:flex;align-items:flex-end;padding:0 6px;
-  background:#fff;border-bottom:none;gap:2px;padding-top:4px;
-}
-.oe2-nav-home{
-  width:32px;height:28px;background:#fff;border:1px solid #aaa;
-  display:flex;align-items:center;justify-content:center;
-  margin-right:4px;cursor:pointer;border-radius:3px 3px 0 0;
-  font-size:16px;color:#333;
-}
-.oe2-tab{
-  padding:5px 18px;font-size:13px;font-weight:bold;
-  border:1px solid #aaa;border-bottom:none;
-  background:#e8e8e8;color:#333;cursor:pointer;
-  border-radius:3px 3px 0 0;
-}
-.oe2-tab.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
+    .page-title .sub{
+        color:#64748b;
+        font-size:15px;
+    }
 
-/* Blue section banner */
-.oe2-banner{
-  background:linear-gradient(to right,#4a90d9,#5ba3e8);
-  padding:6px 14px;display:flex;align-items:center;gap:10px;
-  min-height:52px;
-}
-.oe2-banner-icon{
-  width:34px;height:34px;background:#fff;border:1px solid #ccc;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:3px;font-size:18px;
-}
-.oe2-banner-label{
-  font-size:15px;font-weight:bold;color:#cc3300;
-  text-shadow:0 0 1px rgba(0,0,0,.1);
-}
+    .module-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+        gap:25px;
+    }
 
-/* Content area */
-.oe2-content{padding:0;background:#fff;}
+    .module-card{
+        background:#ffffff;
+        border-radius:18px;
+        padding:28px;
+        text-decoration:none;
+        transition:all .3s ease;
+        border:1px solid #e2e8f0;
+        box-shadow:0 8px 24px rgba(15,23,42,0.05);
+        position:relative;
+        overflow:hidden;
+    }
 
-/* Section header (e.g. "Job Detail") */
-.oe2-section-title{
-  color:#2563ae;font-size:13px;font-weight:bold;
-  padding:6px 14px 4px;border-bottom:1px solid #ddd;
-  background:#fff;
-}
+    .module-card:hover{
+        transform:translateY(-5px);
+        box-shadow:0 15px 35px rgba(15,23,42,0.12);
+        border-color:#2563eb;
+    }
 
-/* List / Edit / Add tab row */
-.oe2-view-tabs{
-  display:flex;align-items:center;padding:4px 10px;
-  border-bottom:1px solid #ddd;background:#f7f7f7;gap:4px;
-}
-.oe2-view-tab{
-  padding:3px 18px;font-size:13px;border:1px solid #aaa;
-  background:#e8e8e8;color:#333;cursor:pointer;border-radius:2px;
-}
-.oe2-view-tab.active{background:#4a90d9;color:#fff;border-color:#3a80c9;}
-.oe2-active-section{
-  margin-left:auto;font-size:12px;color:#555;
-}
-.oe2-active-section b{color:#cc3300;}
+    .module-icon{
+        width:60px;
+        height:60px;
+        border-radius:14px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:28px;
+        margin-bottom:20px;
+    }
 
-/* ── LISTING LAYOUT ──────────────────────────────── */
-.oe2-list-layout{display:flex;min-height:480px;}
+    .proposal-icon{
+        background:#dbeafe;
+        color:#2563eb;
+    }
 
-/* Sidebar search */
-.oe2-sidebar{
-  width:200px;flex-shrink:0;border-right:1px solid #ddd;
-  background:#f9f9f9;padding:8px;
-}
-.oe2-search-header{
-  background:#4a90d9;color:#fff;font-size:12px;font-weight:bold;
-  padding:5px 8px;border-radius:3px;margin-bottom:8px;
-  display:flex;align-items:center;gap:6px;
-}
-.oe2-search-input{
-  width:100%;height:26px;border:1px solid #bbb;padding:0 6px;
-  font-size:12px;margin-bottom:6px;border-radius:2px;
-  background:#fff;color:#999;
-}
-.oe2-search-input.filled{color:#222;}
-.oe2-select{
-  width:100%;height:26px;border:1px solid #bbb;padding:0 4px;
-  font-size:12px;margin-bottom:6px;border-radius:2px;background:#fff;
-}
-.oe2-status-box{
-  width:100%;border:1px solid #bbb;padding:4px 6px;
-  font-size:11px;color:#444;margin-bottom:8px;background:#fff;
-  border-radius:2px;line-height:1.7;
-}
-.oe2-btn-row{display:flex;gap:6px;margin-top:4px;}
-.oe2-btn{
-  padding:3px 14px;font-size:12px;font-weight:bold;
-  border:1px solid #aaa;border-radius:2px;cursor:pointer;
-}
-.oe2-btn-blue{background:#4a90d9;color:#fff;border-color:#3a80c9;}
-.oe2-btn-white{background:#fff;color:#333;border-color:#aaa;}
-.oe2-btn-orange{background:#e07b00;color:#fff;border-color:#c86a00;}
-.oe2-btn-green{background:#2e7d32;color:#fff;border-color:#1b5e20;}
-.oe2-btn-gray{background:#e0e0e0;color:#333;border-color:#bbb;}
+    .ocr-icon{
+        background:#dcfce7;
+        color:#16a34a;
+    }
 
-/* Main grid */
-.oe2-grid-area{flex:1;overflow-x:auto;padding:10px 12px;}
-.oe2-grid{width:100%;border-collapse:collapse;font-size:12px;}
-.oe2-grid th{
-  background:#fff;color:#111;font-weight:bold;
-  padding:7px 10px;border-bottom:2px solid #4a90d9;
-  text-align:left;white-space:nowrap;
-}
-.oe2-grid td{
-  padding:6px 10px;border-bottom:1px solid #e8e8e8;
-  vertical-align:top;
-}
-.oe2-grid tr:hover td{background:#eef4fb;}
-.oe2-grid .link{color:#8B1A1A;cursor:pointer;font-weight:bold;}
-.oe2-grid .link:hover{text-decoration:underline;}
-.oe2-badge{
-  display:inline-block;font-size:10px;font-weight:bold;
-  padding:1px 7px;border-radius:10px;white-space:nowrap;
-}
-.badge-draft{background:#e8e8e8;color:#444;}
-.badge-sent{background:#cce5ff;color:#004085;}
-.badge-approved{background:#d4edda;color:#155724;}
-.badge-rejected{background:#f8d7da;color:#721c24;}
-.badge-new{background:#d1ecf1;color:#0c5460;}
-.badge-revision{background:#fff3cd;color:#856404;}
-.badge-co{background:#e8e8e8;color:#444;}
+    .module-card h2{
+        font-size:22px;
+        margin-bottom:12px;
+        color:#0f172a;
+    }
 
-/* ── EDIT FORM ────────────────────────────────────── */
-.oe2-form-area{padding:10px 16px;}
+    .module-card p{
+        color:#64748b;
+        line-height:1.6;
+        font-size:15px;
+        margin-bottom:20px;
+    }
 
-/* Collapsible section bar */
-.oe2-form-section-bar{
-  background:#e8e8e8;border:1px solid #ccc;
-  padding:5px 10px;font-size:13px;font-weight:bold;color:#222;
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:10px;border-radius:2px;cursor:pointer;
-}
-.oe2-form-section-bar .hide-btn{
-  font-size:11px;color:#4a90d9;font-weight:normal;
-}
+    .module-footer{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+    }
 
-/* Form rows */
-.oe2-form-row{
-  display:flex;align-items:flex-start;gap:0;
-  margin-bottom:8px;flex-wrap:wrap;
-}
-.oe2-field{display:flex;align-items:center;gap:6px;margin-right:18px;margin-bottom:4px;}
-.oe2-field label{
-  font-size:12px;color:#222;font-weight:normal;
-  white-space:nowrap;min-width:90px;
-}
-.oe2-field label.wide{min-width:130px;}
-.oe2-field label.narrow{min-width:50px;}
-.oe2-input{
-  height:24px;border:1px solid #bbb;padding:0 6px;
-  font-size:12px;background:#fff;border-radius:2px;
-}
-.oe2-input.w80{width:80px;}
-.oe2-input.w120{width:120px;}
-.oe2-input.w160{width:160px;}
-.oe2-input.w220{width:220px;}
-.oe2-input.w300{width:300px;}
-.oe2-input.w400{width:400px;}
-.oe2-input.w-full{width:100%;}
-.oe2-input.placeholder{color:#999;}
-.oe2-input.auto-val{
-  background:#e8f5e9;color:#1b5e20;font-weight:bold;border-color:#81c784;
-}
-.oe2-textarea{
-  border:1px solid #bbb;padding:4px 6px;font-size:12px;
-  background:#fff;border-radius:2px;resize:vertical;width:100%;
-}
-.oe2-select-field{
-  height:24px;border:1px solid #bbb;padding:0 4px;
-  font-size:12px;background:#fff;border-radius:2px;
-}
-.oe2-select-field.w100{width:100px;}
-.oe2-select-field.w140{width:140px;}
-.oe2-select-field.w160{width:160px;}
+    .status{
+        background:#ecfdf5;
+        color:#15803d;
+        padding:6px 12px;
+        border-radius:30px;
+        font-size:13px;
+        font-weight:600;
+    }
 
-/* Action toolbar (Edit screen) */
-.oe2-action-bar{
-  background:#f0f6ff;border:1px solid #c8dcf5;border-radius:3px;
-  padding:8px 12px;margin-bottom:12px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-}
-.oe2-action-label{font-size:12px;color:#555;font-weight:bold;margin-right:4px;}
+    .open-btn{
+        color:#2563eb;
+        font-weight:600;
+        font-size:14px;
+    }
 
-/* Inline items table */
-.oe2-items-wrap{margin:10px 0;}
-.oe2-items-table{width:100%;border-collapse:collapse;font-size:12px;}
-.oe2-items-table th{
-  background:#4a90d9;color:#fff;padding:5px 8px;
-  text-align:left;font-size:12px;
-}
-.oe2-items-table td{
-  padding:5px 8px;border-bottom:1px solid #ddd;
-  vertical-align:middle;
-}
-.oe2-items-table tr:nth-child(even) td{background:#f5f9ff;}
-.oe2-items-table .add-row td{
-  background:#f0fff4;border-top:1px dashed #81c784;
-  color:#2e7d32;font-weight:bold;cursor:pointer;
-}
-.oe2-items-total{
-  text-align:right;font-weight:bold;font-size:13px;
-  color:#222;padding:6px 8px;border-top:2px solid #4a90d9;
-}
+    @media(max-width:768px){
+        body{
+            padding:20px;
+        }
 
-/* Modal */
-.oe2-modal-backdrop{
-  background:rgba(0,0,0,.45);padding:40px 20px;
-  display:flex;align-items:flex-start;justify-content:center;
-  min-height:500px;
-}
-.oe2-modal{
-  background:#fff;width:540px;border:1px solid #aaa;
-  box-shadow:0 4px 24px rgba(0,0,0,.3);border-radius:3px;overflow:hidden;
-}
-.oe2-modal-hdr{
-  background:#4a90d9;color:#fff;padding:8px 14px;
-  font-weight:bold;font-size:14px;
-  display:flex;justify-content:space-between;align-items:center;
-}
-.oe2-modal-body{padding:16px 18px;}
-.oe2-modal-ftr{
-  background:#f7f7f7;border-top:1px solid #ddd;
-  padding:10px 16px;display:flex;justify-content:flex-end;gap:8px;
-}
-.oe2-modal-field{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-.oe2-modal-field label{font-size:12px;font-weight:bold;color:#222;min-width:130px;}
-.highlight-field{
-  border:2px solid #e07b00 !important;background:#fff8f0 !important;
-}
-.chk-row{
-  display:flex;align-items:flex-start;gap:10px;
-  padding:7px 0;border-bottom:1px solid #eee;font-size:12px;
-}
-.chk-row:last-child{border-bottom:none;}
-.chk-box{
-  width:14px;height:14px;border:1px solid #bbb;background:#fff;
-  flex-shrink:0;margin-top:1px;border-radius:2px;
-  display:flex;align-items:center;justify-content:center;font-size:10px;
-}
-.chk-box.on{background:#4a90d9;border-color:#3a80c9;color:#fff;}
-
-/* Radio */
-.oe2-radio-group{display:flex;gap:18px;align-items:center;}
-.oe2-radio{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;}
-
-/* Divider between screens */
-.screen-divider{
-  margin:40px 0 28px;border:none;border-top:3px solid #4a90d9;
-  opacity:.35;
-}
-
-/* Callout / note box */
-.oe2-callout{
-  background:#fff8dc;border:1px solid #e6c84a;border-left:4px solid #e07b00;
-  border-radius:2px;padding:8px 12px;font-size:12px;color:#5a4000;
-  margin:10px 0;line-height:1.6;
-}
-.oe2-callout.blue{background:#e8f0fe;border-color:#93c5fd;border-left-color:#2563eb;color:#1e40af;}
-
-/* DB / tech section */
-.tech-wrap{max-width:1200px;margin:32px auto;padding:0 16px;}
-.tech-card{
-  background:#fff;border:1px solid #ccc;border-radius:4px;
-  padding:16px 20px;margin-bottom:20px;
-  box-shadow:0 1px 4px rgba(0,0,0,.07);
-}
-.tech-card h3{font-size:14px;color:#1e3a5f;border-bottom:2px solid #4a90d9;padding-bottom:6px;margin-bottom:12px;}
-.tech-table{width:100%;border-collapse:collapse;font-size:12px;}
-.tech-table th{background:#1e3a5f;color:#fff;padding:6px 10px;text-align:left;}
-.tech-table td{padding:6px 10px;border-bottom:1px solid #eee;vertical-align:top;}
-.tech-table tr:nth-child(even) td{background:#f8fafc;}
-.tech-table td:first-child{font-family:Consolas,monospace;color:#1e3a5f;font-weight:600;}
-code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-radius:2px;font-size:11px;}
-
-/* Proposal number */
-.prop-num{color:#8B1A1A;font-weight:bold;}
-
-/* Page title outside app */
-.page-title{
-  max-width:1200px;margin:24px auto 0;padding:0 0 10px;
-  display:flex;align-items:baseline;gap:14px;
-}
-.page-title h1{font-size:22px;color:#1e3a5f;font-weight:bold;}
-.page-title .sub{font-size:13px;color:#666;}
+        .page-title h1{
+            font-size:28px;
+        }
+    }
 </style>
 </head>
+
 <body>
 
-<!-- ══════════════════════════════════════════════════
-     PAGE TITLE (outside the app chrome)
-     ══════════════════════════════════════════════════ -->
-<div class="page-title">
-  <h1>OE2 — Proposal Module: Feature Design</h1>
-  <span class="sub">UI matches existing OE2 theme &nbsp;·&nbsp; May 2026</span>
-</div>
+<div class="container">
 
-<!-- ══════════════════════════════════════════════════
-     SCREEN 1 — PROPOSAL LISTING
-     ══════════════════════════════════════════════════ -->
-<div style="max-width:1200px;margin:0 auto 8px;">
-  <div class="doc-label">Screen 1 — Proposal Listing Page</div>
-  <div class="doc-note">
-    📌 New top-level tab "<b>Proposal</b>" added to the main navigation (same level as Job, Reports, Customer…).
-    Listing layout mirrors Jobs.aspx: search sidebar on left, grid on right.
-    Proposal numbers follow the format <b>NNNNN.00</b> (base) and <b>NNNNN.01, .02…</b> for revisions.
-  </div>
-</div>
-
-<div class="oe2-app">
-  <!-- Header -->
-  <div class="oe2-topbar">
-    <div class="oe2-logo">Albert Pearlman OE-2</div>
-    <div class="oe2-userinfo">
-      Welcome <b>Reliable</b>
-      <span>👤 <a>My Account</a></span>
-      <span>⏻ <a>Logout</a></span>
-      <span>📅 22 May 2026, 23:00</span>
-    </div>
-  </div>
-
-  <!-- Nav tabs -->
-  <div class="oe2-nav">
-    <div class="oe2-nav-home">🏠</div>
-    <div class="oe2-tab">Job</div>
-    <div class="oe2-tab">Reports</div>
-    <div class="oe2-tab">Customer</div>
-    <div class="oe2-tab">Vendor</div>
-    <div class="oe2-tab active">Proposal</div>
-    <div class="oe2-tab">Settings</div>
-    <div class="oe2-tab">OE1</div>
-  </div>
-
-  <!-- Blue banner -->
-  <div class="oe2-banner">
-    <div class="oe2-banner-icon">📋</div>
-    <div class="oe2-banner-label">Proposals</div>
-  </div>
-
-  <div class="oe2-content">
-    <div class="oe2-section-title">Proposal Detail</div>
-
-    <!-- View tabs -->
-    <div class="oe2-view-tabs">
-      <div class="oe2-view-tab active">List</div>
-      <div class="oe2-view-tab">Add</div>
-      <div class="oe2-active-section">Active Section : <b>Proposals</b></div>
-    </div>
-
-    <!-- List layout -->
-    <div class="oe2-list-layout">
-
-      <!-- Sidebar -->
-      <div class="oe2-sidebar">
-        <div class="oe2-search-header">📋 Search Proposals</div>
-        <input class="oe2-search-input" placeholder="Enter Proposal#" readonly/>
-        <input class="oe2-search-input" placeholder="Enter Customer Name" readonly/>
-        <input class="oe2-search-input" placeholder="Enter Customer Job#" readonly/>
-        <select class="oe2-select">
-          <option>All Project Manager</option>
-        </select>
-        <!-- Status checkboxes -->
-        <div class="oe2-status-box">
-          <div>☑ Draft</div>
-          <div>☑ Sent</div>
-          <div>☑ Approved</div>
-          <div>☑ Rejected</div>
-        </div>
-        <!-- Type checkboxes -->
-        <div class="oe2-status-box">
-          <div>☑ New</div>
-          <div>☑ Revision</div>
-          <div>☑ Change Order</div>
-        </div>
-        <div class="oe2-btn-row">
-          <button class="oe2-btn oe2-btn-white">Clear</button>
-          <button class="oe2-btn oe2-btn-blue">Search</button>
-        </div>
-      </div>
-
-      <!-- Grid -->
-      <div class="oe2-grid-area">
-        <table class="oe2-grid">
-          <thead>
-            <tr>
-              <th>Order Date</th>
-              <th>Proposal #</th>
-              <th>Customer Name</th>
-              <th>Job Name / Description</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Amount ($)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>05/20/2026</td>
-              <td class="link">10000.00</td>
-              <td>HINES – 750</td>
-              <td>National Australia Bank – Repainting</td>
-              <td><span class="oe2-badge badge-new">New</span></td>
-              <td><span class="oe2-badge badge-draft">Draft</span></td>
-              <td>$24,500.00</td>
-            </tr>
-            <tr>
-              <td>05/22/2026</td>
-              <td class="link">10000.01</td>
-              <td>HINES – 750</td>
-              <td>National Australia Bank – Repainting (Rev 1)</td>
-              <td><span class="oe2-badge badge-revision">Revision</span></td>
-              <td><span class="oe2-badge badge-sent">Sent</span></td>
-              <td>$26,000.00</td>
-            </tr>
-            <tr>
-              <td>05/19/2026</td>
-              <td class="link">10001.00</td>
-              <td>OBRA</td>
-              <td>Prep and Paint – Lobby</td>
-              <td><span class="oe2-badge badge-new">New</span></td>
-              <td><span class="oe2-badge badge-approved">Approved</span></td>
-              <td>$8,750.00</td>
-            </tr>
-            <tr>
-              <td>05/18/2026</td>
-              <td class="link">10002.00</td>
-              <td>SWINERTON BUILDERS</td>
-              <td>Amazon – 6th Floor Repaint</td>
-              <td><span class="oe2-badge badge-co">Change Order</span></td>
-              <td><span class="oe2-badge badge-rejected">Rejected</span></td>
-              <td>$3,200.00</td>
-            </tr>
-            <tr>
-              <td>05/17/2026</td>
-              <td class="link">10003.00</td>
-              <td>Versatile Services LLC</td>
-              <td>Cafe – Touch Up</td>
-              <td><span class="oe2-badge badge-new">New</span></td>
-              <td><span class="oe2-badge badge-draft">Draft</span></td>
-              <td>$1,100.00</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div><!-- end list layout -->
-  </div>
-</div><!-- end app -->
-
-
-<!-- ══════════════════════════════════════════════════
-     SCREEN 2 — CREATE PROPOSAL
-     ══════════════════════════════════════════════════ -->
-<div style="max-width:1200px;margin:32px auto 8px;">
-  <div class="doc-label">Screen 2 — Create / Add Proposal</div>
-  <div class="doc-note">
-    📌 Opened when user clicks the <b>Add</b> tab.
-    Customer can be an <b>existing customer</b> (lookup) or a <b>prospect</b> (free-text name entry).
-    Status: Draft / Sent / Approved / Rejected. &nbsp; Type: New / Revision / Change Order.
-    Proposal # is auto-generated (e.g. <b>10004.00</b>).
-  </div>
-</div>
-
-<div class="oe2-app">
-  <div class="oe2-topbar">
-    <div class="oe2-logo">Albert Pearlman OE-2</div>
-    <div class="oe2-userinfo">Welcome <b>Reliable</b> <span>👤 <a>My Account</a></span> <span>⏻ <a>Logout</a></span> <span>📅 22 May 2026, 23:00</span></div>
-  </div>
-  <div class="oe2-nav">
-    <div class="oe2-nav-home">🏠</div>
-    <div class="oe2-tab">Job</div>
-    <div class="oe2-tab">Reports</div>
-    <div class="oe2-tab">Customer</div>
-    <div class="oe2-tab">Vendor</div>
-    <div class="oe2-tab active">Proposal</div>
-    <div class="oe2-tab">Settings</div>
-    <div class="oe2-tab">OE1</div>
-  </div>
-  <div class="oe2-banner">
-    <div class="oe2-banner-icon">📋</div>
-    <div class="oe2-banner-label">Proposals</div>
-  </div>
-  <div class="oe2-content">
-    <div class="oe2-section-title">Proposal Detail</div>
-    <div class="oe2-view-tabs">
-      <div class="oe2-view-tab">List</div>
-      <div class="oe2-view-tab active">Add</div>
-      <div class="oe2-active-section">Active Section : <b>Proposals</b></div>
-    </div>
-
-    <div class="oe2-form-area">
-
-      <!-- Section: Proposals -->
-      <div class="oe2-form-section-bar">Proposals <span class="hide-btn">Hide ▲</span></div>
-
-      <!-- Row 1: Proposal# + Customer + Order Date -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Proposal #</label>
-          <input class="oe2-input w80 auto-val" value="10004.00" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;max-width:520px;">
-          <label>Customer</label>
-          <!-- Radio toggle for existing vs prospect -->
-          <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
-            <div class="oe2-radio-group" style="margin-bottom:4px;">
-              <label class="oe2-radio"><input type="radio" name="ctype" checked/> Existing Customer</label>
-              <label class="oe2-radio"><input type="radio" name="ctype"/> Prospect (New)</label>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input class="oe2-input w300 placeholder" value="Select Customer…" readonly/>
-              <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 10px;">🔍 Lookup</button>
-            </div>
-          </div>
-        </div>
-        <div class="oe2-field" style="margin-left:auto;">
-          <label class="narrow">Order Date</label>
-          <input class="oe2-input w120" value="05/22/2026" readonly/>
-        </div>
-      </div>
-
-      <!-- Row 2: Job Name / Description -->
-      <div class="oe2-form-row">
-        <div class="oe2-field" style="flex:1;max-width:400px;">
-          <label>Job Name</label>
-          <input class="oe2-input w300 placeholder" value="Enter job/project name" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;">
-          <label>Description</label>
-          <textarea class="oe2-textarea" rows="3" style="width:380px;" placeholder="Enter scope of work / description…" readonly></textarea>
-        </div>
-      </div>
-
-      <!-- Row 3: Address fields -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Floor</label>
-          <input class="oe2-input w120 placeholder" value="Floor / Unit" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Job Address</label>
-          <input class="oe2-input w220 placeholder" value="Street address" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow">City</label>
-          <input class="oe2-input w140 placeholder" value="City" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:34px;">State</label>
-          <input class="oe2-input w80 placeholder" value="NY" readonly/>
-        </div>
-      </div>
-
-      <!-- Row 4: Status / Type / Amount / Tax -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Status</label>
-          <select class="oe2-select-field w120">
-            <option selected>Draft</option>
-            <option>Sent</option>
-            <option>Approved</option>
-            <option>Rejected</option>
-          </select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow">Type</label>
-          <select class="oe2-select-field w140">
-            <option selected>New</option>
-            <option>Revision</option>
-            <option>Change Order</option>
-          </select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow">Amount</label>
-          <span style="font-size:13px;margin-right:2px;">$</span>
-          <input class="oe2-input w100 placeholder" value="0.00" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Tax Code</label>
-          <select class="oe2-select-field w140">
-            <option>NYC – 8.875</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Row 5: Dates + PM -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Valid Until Date</label>
-          <input class="oe2-input w120 placeholder" value="Valid Until" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Est. Start Date</label>
-          <input class="oe2-input w120 placeholder" value="Start Date" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Est. End Date</label>
-          <input class="oe2-input w120 placeholder" value="End Date" readonly/>
-        </div>
-      </div>
-
-      <!-- Row 6: Customer PO / Customer Job# / Job Instruction -->
-      <div class="oe2-form-row">
-        <div class="oe2-field" style="flex:1;max-width:340px;">
-          <label class="wide">Customer PO / Change Order #</label>
-          <input class="oe2-input w220 placeholder" value="Customer PO/Change Order#" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;max-width:280px;">
-          <label class="wide">Customer Job #</label>
-          <input class="oe2-input w160 placeholder" value="Customer Job#" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;">
-          <label>Job Instruction</label>
-          <textarea class="oe2-textarea" rows="2" style="width:260px;" placeholder="Enter Job Instruction" readonly></textarea>
-        </div>
-      </div>
-
-      <!-- Row 7: PM/Biller, PS, PE, Project Type -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:60px;">PM/Biller :</label>
-          <select class="oe2-select-field w120"><option>Select</option></select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:22px;">PS :</label>
-          <select class="oe2-select-field w120"><option>Select</option></select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:22px;">PE :</label>
-          <select class="oe2-select-field w120"><option>Select</option></select>
-        </div>
-        <div class="oe2-field">
-          <label>Project Type :</label>
-          <select class="oe2-select-field w120"><option>Select</option></select>
-        </div>
-      </div>
-
-      <!-- ── Proposal Items section ── -->
-      <div class="oe2-form-section-bar" style="margin-top:14px;">Proposal Items <span class="hide-btn">Hide ▲</span></div>
-
-      <div class="oe2-items-wrap">
-        <table class="oe2-items-table">
-          <thead>
-            <tr>
-              <th style="width:40%">Description</th>
-              <th style="width:10%">Qty</th>
-              <th style="width:15%">Unit Price ($)</th>
-              <th style="width:15%">Total ($)</th>
-              <th style="width:20%">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input class="oe2-input" style="width:98%;" value="Site Preparation &amp; Grading" readonly/></td>
-              <td><input class="oe2-input w80" value="1" readonly/></td>
-              <td><input class="oe2-input w100" value="8,000.00" readonly/></td>
-              <td>$8,000.00</td>
-              <td>
-                <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button>
-                <button class="oe2-btn oe2-btn-white" style="font-size:11px;padding:2px 8px;color:#c00;">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td><input class="oe2-input" style="width:98%;" value="Concrete Foundation Work" readonly/></td>
-              <td><input class="oe2-input w80" value="1" readonly/></td>
-              <td><input class="oe2-input w100" value="12,000.00" readonly/></td>
-              <td>$12,000.00</td>
-              <td>
-                <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button>
-                <button class="oe2-btn oe2-btn-white" style="font-size:11px;padding:2px 8px;color:#c00;">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td><input class="oe2-input" style="width:98%;" value="Electrical Rough-in" readonly/></td>
-              <td><input class="oe2-input w80" value="2" readonly/></td>
-              <td><input class="oe2-input w100" value="2,250.00" readonly/></td>
-              <td>$4,500.00</td>
-              <td>
-                <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button>
-                <button class="oe2-btn oe2-btn-white" style="font-size:11px;padding:2px 8px;color:#c00;">Delete</button>
-              </td>
-            </tr>
-            <tr class="add-row">
-              <td colspan="5">＋ Add New Item</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="oe2-items-total">Proposal Total : &nbsp; $24,500.00</div>
-      </div>
-
-      <!-- Save button -->
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;padding-bottom:16px;">
-        <button class="oe2-btn oe2-btn-white">Cancel</button>
-        <button class="oe2-btn oe2-btn-blue">💾 Save Proposal</button>
-      </div>
-    </div>
-  </div>
-</div><!-- end app -->
-
-
-<!-- ══════════════════════════════════════════════════
-     SCREEN 3 — EDIT PROPOSAL
-     ══════════════════════════════════════════════════ -->
-<div style="max-width:1200px;margin:32px auto 8px;">
-  <div class="doc-label">Screen 3 — Edit Proposal (with Action Buttons)</div>
-  <div class="doc-note">
-    📌 Opened when user clicks a Proposal# link from the listing grid.
-    Edit screen adds an <b>action toolbar</b> with:
-    <b>New Revision</b> · <b>Convert to Job</b> · <b>Print</b> · <b>Email</b>.
-    "Convert to Job" is only enabled when Status = <b>Approved</b>.
-  </div>
-</div>
-
-<div class="oe2-app">
-  <div class="oe2-topbar">
-    <div class="oe2-logo">Albert Pearlman OE-2</div>
-    <div class="oe2-userinfo">Welcome <b>Reliable</b> <span>👤 <a>My Account</a></span> <span>⏻ <a>Logout</a></span> <span>📅 22 May 2026, 23:01</span></div>
-  </div>
-  <div class="oe2-nav">
-    <div class="oe2-nav-home">🏠</div>
-    <div class="oe2-tab">Job</div>
-    <div class="oe2-tab">Reports</div>
-    <div class="oe2-tab">Customer</div>
-    <div class="oe2-tab">Vendor</div>
-    <div class="oe2-tab active">Proposal</div>
-    <div class="oe2-tab">Settings</div>
-    <div class="oe2-tab">OE1</div>
-  </div>
-  <div class="oe2-banner">
-    <div class="oe2-banner-icon">📋</div>
-    <div class="oe2-banner-label">Proposals</div>
-  </div>
-  <div class="oe2-content">
-    <div class="oe2-section-title">Proposal Detail</div>
-    <div class="oe2-view-tabs">
-      <div class="oe2-view-tab">List</div>
-      <div class="oe2-view-tab active">Edit</div>
-      <div class="oe2-active-section">Active Section : <b>Proposals</b></div>
-    </div>
-
-    <div class="oe2-form-area">
-
-      <!-- ★ ACTION TOOLBAR — key addition on Edit screen -->
-      <div class="oe2-action-bar">
-        <span class="oe2-action-label">Actions :</span>
-        <button class="oe2-btn oe2-btn-white">📄 New Revision</button>
-        <button class="oe2-btn oe2-btn-green">🔄 Convert to Job</button>
-        <button class="oe2-btn oe2-btn-white">🖨️ Print</button>
-        <button class="oe2-btn oe2-btn-white">✉️ Email</button>
-        <span style="margin-left:auto;font-size:12px;color:#555;">
-          Proposal <b class="prop-num">10001.00</b> &nbsp;|&nbsp;
-          Status: <span class="oe2-badge badge-approved">Approved</span>
+    <div class="page-title">
+        <h1>OE2 — Module Navigation</h1>
+        <span class="sub">
+            Enterprise Module Designs · Proposal & OCR Automation · May 2026
         </span>
-      </div>
-
-      <div class="oe2-form-section-bar">Proposals <span class="hide-btn">Hide ▲</span></div>
-
-      <!-- Row 1 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Proposal #</label>
-          <input class="oe2-input w80 auto-val" value="10001.00" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;max-width:500px;">
-          <label>Customer</label>
-          <input class="oe2-input w300" value="OBRA" readonly/>
-          <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 10px;">🔍 Change</button>
-        </div>
-        <div class="oe2-field" style="margin-left:auto;">
-          <label class="narrow">Order Date</label>
-          <input class="oe2-input w120" value="05/19/2026" readonly/>
-        </div>
-      </div>
-
-      <!-- Row 2 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field" style="flex:1;max-width:400px;">
-          <label>Job Name</label>
-          <input class="oe2-input w300" value="Prep and Paint – Lobby" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;">
-          <label>Description</label>
-          <textarea class="oe2-textarea" rows="3" style="width:380px;" readonly>Prepare and paint lobby walls, ceiling and doors. Two coats of approved paint.</textarea>
-        </div>
-      </div>
-
-      <!-- Row 3 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Floor</label>
-          <input class="oe2-input w120" value="Lobby" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Job Address</label>
-          <input class="oe2-input w220" value="437 Madison Avenue" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow">City</label>
-          <input class="oe2-input w140" value="New York" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:34px;">State</label>
-          <input class="oe2-input w80" value="NY" readonly/>
-        </div>
-      </div>
-
-      <!-- Row 4 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Status</label>
-          <select class="oe2-select-field w120">
-            <option>Draft</option><option>Sent</option><option selected>Approved</option><option>Rejected</option>
-          </select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow">Type</label>
-          <select class="oe2-select-field w140">
-            <option selected>New</option><option>Revision</option><option>Change Order</option>
-          </select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow">Amount</label>
-          <span style="font-size:13px;margin-right:2px;">$</span>
-          <input class="oe2-input w100" value="8,750.00" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Tax Code</label>
-          <select class="oe2-select-field w140"><option>NYC – 8.875</option></select>
-        </div>
-      </div>
-
-      <!-- Row 5 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label>Valid Until Date</label>
-          <input class="oe2-input w120" value="06/19/2026" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Est. Start Date</label>
-          <input class="oe2-input w120" value="05/25/2026" readonly/>
-        </div>
-        <div class="oe2-field">
-          <label>Est. End Date</label>
-          <input class="oe2-input w120" value="06/10/2026" readonly/>
-        </div>
-      </div>
-
-      <!-- Row 6 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field" style="flex:1;max-width:340px;">
-          <label class="wide">Customer PO / Change Order #</label>
-          <input class="oe2-input w220 placeholder" value="Customer PO/Change Order#" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;max-width:280px;">
-          <label class="wide">Customer Job #</label>
-          <input class="oe2-input w160 placeholder" value="Customer Job#" readonly/>
-        </div>
-        <div class="oe2-field" style="flex:1;">
-          <label>Job Instruction</label>
-          <textarea class="oe2-textarea" rows="2" style="width:260px;" placeholder="Enter Job Instruction" readonly></textarea>
-        </div>
-      </div>
-
-      <!-- Row 7 -->
-      <div class="oe2-form-row">
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:60px;">PM/Biller :</label>
-          <select class="oe2-select-field w120"><option>Paulee Castell</option></select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:22px;">PS :</label>
-          <select class="oe2-select-field w120"><option>Paulee Castell</option></select>
-        </div>
-        <div class="oe2-field">
-          <label class="narrow" style="min-width:22px;">PE :</label>
-          <select class="oe2-select-field w120"><option>Paulee Castell</option></select>
-        </div>
-        <div class="oe2-field">
-          <label>Project Type :</label>
-          <select class="oe2-select-field w120"><option>Select</option></select>
-        </div>
-      </div>
-
-      <!-- Items -->
-      <div class="oe2-form-section-bar" style="margin-top:14px;">Proposal Items <span class="hide-btn">Hide ▲</span></div>
-      <div class="oe2-items-wrap">
-        <table class="oe2-items-table">
-          <thead>
-            <tr>
-              <th style="width:40%">Description</th>
-              <th style="width:10%">Qty</th>
-              <th style="width:15%">Unit Price ($)</th>
-              <th style="width:15%">Total ($)</th>
-              <th style="width:20%">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input class="oe2-input" style="width:98%;" value="Lobby Wall Preparation" readonly/></td>
-              <td><input class="oe2-input w80" value="1" readonly/></td>
-              <td><input class="oe2-input w100" value="3,500.00" readonly/></td>
-              <td>$3,500.00</td>
-              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-white" style="font-size:11px;padding:2px 8px;color:#c00;">Delete</button></td>
-            </tr>
-            <tr>
-              <td><input class="oe2-input" style="width:98%;" value="Ceiling Paint – 2 Coats" readonly/></td>
-              <td><input class="oe2-input w80" value="1" readonly/></td>
-              <td><input class="oe2-input w100" value="3,250.00" readonly/></td>
-              <td>$3,250.00</td>
-              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-white" style="font-size:11px;padding:2px 8px;color:#c00;">Delete</button></td>
-            </tr>
-            <tr>
-              <td><input class="oe2-input" style="width:98%;" value="Door Refinishing" readonly/></td>
-              <td><input class="oe2-input w80" value="2" readonly/></td>
-              <td><input class="oe2-input w100" value="1,000.00" readonly/></td>
-              <td>$2,000.00</td>
-              <td><button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 8px;">Save</button> <button class="oe2-btn oe2-btn-white" style="font-size:11px;padding:2px 8px;color:#c00;">Delete</button></td>
-            </tr>
-            <tr class="add-row"><td colspan="5">＋ Add New Item</td></tr>
-          </tbody>
-        </table>
-        <div class="oe2-items-total">Proposal Total : &nbsp; $8,750.00</div>
-      </div>
-
-      <!-- Save -->
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;padding-bottom:16px;">
-        <button class="oe2-btn oe2-btn-white">Cancel</button>
-        <button class="oe2-btn oe2-btn-blue">💾 Save Changes</button>
-      </div>
     </div>
-  </div>
-</div><!-- end app -->
 
+    <div class="module-grid">
 
-<!-- ══════════════════════════════════════════════════
-     SCREEN 4 — CONVERT TO JOB MODAL
-     ══════════════════════════════════════════════════ -->
-<div style="max-width:1200px;margin:32px auto 8px;">
-  <div class="doc-label">Screen 4 — Convert to Job (Modal Dialog)</div>
-  <div class="doc-note">
-    📌 Clicking <b>Convert to Job</b> opens this modal overlay on the Edit screen.
-    User selects which proposal items to include in the Job's billing,
-    and enters the <b>Customer Job #</b> (new field).
-    On confirm, a new Job record is created with the selected items pre-populated.
-  </div>
+        <!-- Proposal Module -->
+        <a href="OE2_Proposal_Module_Design.html" class="module-card">
+
+            <div class="module-icon proposal-icon">
+                📋
+            </div>
+
+            <h2>Proposal Module</h2>
+
+            <p>
+                Manage proposal workflow, approvals, customer estimates,
+                pricing structures, and quotation management screens.
+            </p>
+
+            <div class="module-footer">
+                <span class="status">Available</span>
+                <span class="open-btn">Open Module →</span>
+            </div>
+
+        </a>
+
+        <!-- OCR Reader Module -->
+        <a href="OCR_Invoice_Module_Design.html" class="module-card">
+
+            <div class="module-icon ocr-icon">
+                🧾
+            </div>
+
+            <h2>Paint Cost OCR Reader</h2>
+
+            <p>
+                Automated invoice scanning, OCR data extraction,
+                AP number recognition, and paint cost processing workflow.
+            </p>
+
+            <div class="module-footer">
+                <span class="status">Available</span>
+                <span class="open-btn">Open Module →</span>
+            </div>
+
+        </a>
+
+    </div>
+
 </div>
-
-<div class="oe2-app">
-  <div class="oe2-topbar">
-    <div class="oe2-logo">Albert Pearlman OE-2</div>
-    <div class="oe2-userinfo">Welcome <b>Reliable</b> <span>👤 <a>My Account</a></span></div>
-  </div>
-  <div class="oe2-nav">
-    <div class="oe2-nav-home">🏠</div>
-    <div class="oe2-tab">Job</div>
-    <div class="oe2-tab active">Proposal</div>
-    <div class="oe2-tab">Customer</div>
-  </div>
-  <div class="oe2-banner">
-    <div class="oe2-banner-icon">📋</div>
-    <div class="oe2-banner-label">Proposals</div>
-  </div>
-  <div class="oe2-content">
-    <!-- modal on top of dimmed edit screen -->
-    <div class="oe2-modal-backdrop">
-      <div class="oe2-modal">
-        <div class="oe2-modal-hdr">
-          🔄 Convert Proposal to Job
-          <span style="font-weight:normal;font-size:12px;opacity:.8;">Proposal # 10001.00</span>
-        </div>
-        <div class="oe2-modal-body">
-
-          <!-- Customer Job# — NEW required field -->
-          <div style="background:#fff8f0;border:1px solid #e07b00;border-left:4px solid #e07b00;border-radius:3px;padding:10px 14px;margin-bottom:14px;">
-            <div style="font-size:11px;font-weight:bold;color:#c06000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
-              ★ New Field — Customer Job #
-            </div>
-            <div class="oe2-modal-field">
-              <label>Customer Job # <span style="color:#c00;">*</span></label>
-              <input class="oe2-input w160 highlight-field" value="CJ-2026-0441" readonly/>
-            </div>
-            <div style="font-size:11px;color:#8B4513;margin-top:4px;">
-              Enter the customer's own job reference number. This will be saved on the new Job record.
-            </div>
-          </div>
-
-          <!-- Item selection -->
-          <div style="font-size:12px;font-weight:bold;color:#1e3a5f;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">
-            Select Items for Job Billing
-          </div>
-
-          <div class="chk-row">
-            <div class="chk-box on">✓</div>
-            <div style="flex:1;">
-              <b>Lobby Wall Preparation</b>
-              <div style="color:#666;">Qty: 1 &nbsp;·&nbsp; $3,500.00</div>
-            </div>
-            <div style="font-weight:bold;color:#222;">$3,500.00</div>
-          </div>
-          <div class="chk-row">
-            <div class="chk-box on">✓</div>
-            <div style="flex:1;">
-              <b>Ceiling Paint – 2 Coats</b>
-              <div style="color:#666;">Qty: 1 &nbsp;·&nbsp; $3,250.00</div>
-            </div>
-            <div style="font-weight:bold;color:#222;">$3,250.00</div>
-          </div>
-          <div class="chk-row">
-            <div class="chk-box"></div>
-            <div style="flex:1;">
-              <b>Door Refinishing</b>
-              <div style="color:#666;">Qty: 2 &nbsp;·&nbsp; $1,000.00 &nbsp;— <i style="color:#aaa;">not selected</i></div>
-            </div>
-            <div style="color:#aaa;">$2,000.00</div>
-          </div>
-
-          <!-- Total -->
-          <div style="border-top:2px solid #4a90d9;margin-top:10px;padding-top:8px;text-align:right;font-weight:bold;font-size:13px;color:#222;">
-            Billing Total (selected items) : &nbsp; $6,750.00
-          </div>
-        </div>
-        <div class="oe2-modal-ftr">
-          <button class="oe2-btn oe2-btn-white">Cancel</button>
-          <button class="oe2-btn oe2-btn-green">✅ Create Job</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div><!-- end app -->
-
 
 </body>
 </html>
