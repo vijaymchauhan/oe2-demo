@@ -213,7 +213,17 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
 <div class="wrap">
   <div class="doc-label">Screen 1 — Invoice List (Main Screen)</div>
   <div class="doc-desc">
-    The everyday working screen. Shows all vendor invoices detected from the folder. Use the left filters to narrow down by status. Click an invoice row to open it for review. The status column tells you what needs attention — focus on <b>Review Required</b> and <b>Failed</b> first.
+    The everyday working screen. Shows all vendor invoices detected from the folder. Use the left filters to narrow down by status. Click an invoice row to open it for review.
+    <br/><br/>
+    <b>Key columns added:</b>
+    <ul>
+      <li><b>Invoice Address</b> — The ship-to / job-site address extracted by OCR from the invoice.</li>
+      <li><b>OE2 Job Address</b> — The job address on file in OE2 for the matched AP number.</li>
+      <li><b>Floor</b> — Floor from OE2 for the matched AP job.</li>
+      <li>If the invoice address does not match the OE2 job address, the row is flagged <span style="color:#c62828;font-weight:bold;">⚠ Addr Mismatch</span> and automatically sent to Review Required.</li>
+      <li>Invoices over <b>$1,500</b> are flagged with <span style="background:#fff3e0;color:#e65100;font-weight:bold;padding:1px 4px;border-radius:3px;">⚠ $1,500+</span> for extra attention.</li>
+      <li>Approved invoices show a <b>🔗 PDF</b> link to view the original invoice file at any time.</li>
+    </ul>
   </div>
 </div>
 <div class="oe2-app">
@@ -293,24 +303,32 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
           <th>Invoice #</th>
           <th>Date</th>
           <th>AP / PO #</th>
+          <th style="min-width:140px;">Invoice Address <span style="font-size:9px;font-weight:normal;color:#888;">(from OCR)</span></th>
+          <th style="min-width:140px;">OE2 Job Address <span style="font-size:9px;font-weight:normal;color:#888;">(from AP#)</span></th>
+          <th>Floor</th>
           <th>Total</th>
           <th>Status</th>
           <th>OCR</th>
           <th>Actions</th>
         </tr></thead>
         <tbody>
-          <!-- Review Required - needs attention -->
+
+          <!-- Review Required — address mismatch -->
           <tr style="background:#fff8f0;">
             <td><input type="checkbox" class="chk"/></td>
             <td><a class="lnk">Sherwin-Williams</a><div class="muted">Long Island City</div></td>
             <td>99940218490526<div class="muted">PO#: AP76228/7 WEST 34TH</div></td>
             <td>05/20/2026</td>
             <td><b>76228</b><div class="muted" style="font-size:9px;color:#e65100;">⚠ verify AP#</div></td>
+            <td style="font-size:11px;">7 West 34th St<div class="muted">New York NY 10001</div></td>
+            <td style="font-size:11px;color:#c62828;">450 7th Ave<div style="font-size:9px;color:#c62828;font-weight:bold;">⚠ Addr Mismatch</div></td>
+            <td style="font-size:11px;color:#888;">—</td>
             <td><b>$678.72</b></td>
             <td><span class="badge b-rev">🔍 Review Reqd</span></td>
             <td><span class="conf c-mi">74%</span></td>
             <td><button class="btn btn-orange" style="font-size:11px;">Review</button></td>
           </tr>
+
           <!-- Failed -->
           <tr style="background:#fff5f5;">
             <td><input type="checkbox" class="chk"/></td>
@@ -318,58 +336,104 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
             <td><span class="muted">Not extracted</span></td>
             <td>05/23/2026</td>
             <td><span class="muted">—</span></td>
+            <td style="color:#aaa;font-size:11px;">—</td>
+            <td style="color:#aaa;font-size:11px;">—</td>
+            <td style="color:#aaa;font-size:11px;">—</td>
             <td><span class="muted">—</span></td>
             <td><span class="badge b-fail">❌ Failed</span></td>
             <td><span class="conf c-lo">18%</span></td>
             <td><button class="btn btn-white" style="font-size:11px;">↺ Retry</button></td>
           </tr>
-          <!-- Pending approval -->
+
+          <!-- Pending — address match, over $1,500 flag -->
+          <tr style="background:#fffdf5;">
+            <td><input type="checkbox" class="chk" checked/></td>
+            <td><a class="lnk">Sherwin-Williams</a><div class="muted">Long Island City</div></td>
+            <td>88812390041726<div class="muted">PO#: AP76228</div></td>
+            <td>05/22/2026</td>
+            <td><b>76228</b></td>
+            <td style="font-size:11px;">450 7th Ave, 14th Fl<div class="muted">New York NY 10123</div></td>
+            <td style="font-size:11px;color:#2e7d32;">450 7th Ave, 14th Fl<div style="font-size:9px;color:#2e7d32;">✓ Match</div></td>
+            <td style="font-size:11px;font-weight:bold;">14</td>
+            <td>
+              <b>$1,875.40</b>
+              <div style="font-size:9px;background:#fff3e0;color:#e65100;font-weight:bold;padding:1px 4px;border-radius:3px;display:inline-block;margin-top:2px;">⚠ $1,500+</div>
+            </td>
+            <td><span class="badge b-pend">⏳ Pending</span></td>
+            <td><span class="conf c-hi">91%</span></td>
+            <td><button class="btn btn-green" style="font-size:11px;">Approve</button></td>
+          </tr>
+
+          <!-- Pending — address match -->
           <tr>
             <td><input type="checkbox" class="chk" checked/></td>
             <td><a class="lnk">Merit Kaplan Paint</a><div class="muted">237 E 44th St, NY</div></td>
             <td>00411098<div class="muted">PO Number: 76390</div></td>
             <td>05/18/2026</td>
             <td><b>76390</b></td>
+            <td style="font-size:11px;">200 Park Ave, 52F<div class="muted">New York NY 10166</div></td>
+            <td style="font-size:11px;color:#2e7d32;">200 Park Avenue<div style="font-size:9px;color:#2e7d32;">✓ Match</div></td>
+            <td style="font-size:11px;font-weight:bold;">52</td>
             <td><b>$217.53</b></td>
             <td><span class="badge b-pend">⏳ Pending</span></td>
             <td><span class="conf c-hi">92%</span></td>
             <td><button class="btn btn-green" style="font-size:11px;">Approve</button></td>
           </tr>
+
+          <!-- Pending — address match -->
           <tr>
             <td><input type="checkbox" class="chk" checked/></td>
             <td><a class="lnk">Aboff's Paints</a><div class="muted">West Hempstead</div></td>
             <td>R2PBT<div class="muted">PO: 76743</div></td>
             <td>05/19/2026</td>
             <td><b>76743</b></td>
+            <td style="font-size:11px;">1095 Ave of Americas<div class="muted">New York NY 10036</div></td>
+            <td style="font-size:11px;color:#2e7d32;">1095 Avenue of Americas<div style="font-size:9px;color:#2e7d32;">✓ Match</div></td>
+            <td style="font-size:11px;font-weight:bold;">8</td>
             <td><b>$176.86</b></td>
             <td><span class="badge b-pend">⏳ Pending</span></td>
             <td><span class="conf c-hi">87%</span></td>
             <td><button class="btn btn-green" style="font-size:11px;">Approve</button></td>
           </tr>
-          <!-- Approved -->
+
+          <!-- Approved — with PDF link -->
           <tr style="background:#fafafa;">
             <td><input type="checkbox" class="chk"/></td>
             <td><a class="lnk">Deluxe Paint &amp; Chemical</a><div class="muted">605 4th Ave, Brooklyn</div></td>
             <td>1-784814-01<div class="muted">RO No: AP76150/Daren</div></td>
             <td>04/30/2026</td>
             <td><b>76150</b></td>
+            <td style="font-size:11px;">605 Third Ave<div class="muted">New York NY 10158</div></td>
+            <td style="font-size:11px;color:#2e7d32;">605 Third Avenue<div style="font-size:9px;color:#2e7d32;">✓ Match</div></td>
+            <td style="font-size:11px;font-weight:bold;">22</td>
             <td><b>$180.21</b></td>
             <td><span class="badge b-appr">✓ Approved</span></td>
             <td><span class="conf c-hi">91%</span></td>
-            <td><button class="btn btn-blue" style="font-size:11px;">Add to Job</button></td>
+            <td>
+              <button class="btn btn-blue" style="font-size:11px;">Add to Job</button>
+              <a class="lnk" style="font-size:10px;display:block;margin-top:3px;">🔗 View PDF</a>
+            </td>
           </tr>
-          <!-- Linked -->
+
+          <!-- Linked — with PDF link -->
           <tr style="background:#f5f5f5;">
             <td><input type="checkbox" class="chk"/></td>
             <td><a class="lnk">Eastern Paint Industries</a><div class="muted">Brooklyn</div></td>
             <td>6HNDU<div class="muted">PO: 76656</div></td>
             <td>05/18/2026</td>
             <td><b>76656</b></td>
+            <td style="font-size:11px;">One Penn Plaza<div class="muted">New York NY 10119</div></td>
+            <td style="font-size:11px;color:#2e7d32;">1 Penn Plaza<div style="font-size:9px;color:#2e7d32;">✓ Match</div></td>
+            <td style="font-size:11px;font-weight:bold;">31</td>
             <td><b>$471.19</b></td>
             <td><span class="badge b-link">✓ Linked to Job</span></td>
             <td><span class="conf c-hi">93%</span></td>
-            <td><button class="btn btn-white" style="font-size:11px;">View</button></td>
+            <td>
+              <button class="btn btn-white" style="font-size:11px;">View</button>
+              <a class="lnk" style="font-size:10px;display:block;margin-top:3px;">🔗 View PDF</a>
+            </td>
           </tr>
+
         </tbody>
       </table>
       <div class="paging">
@@ -387,6 +451,9 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
   <div class="doc-label">Screen 2 — Invoice Review &amp; Edit</div>
   <div class="doc-desc">
     Opens when you click an invoice row. Shows what OCR extracted from the vendor PDF. Fields with <b style="color:#c62828;">red border = low confidence</b> — must verify. <b style="color:#e65100;">Orange border = medium confidence</b> — check before approving. The AP/PO Number is always shown prominently since it links the invoice to the correct OE2 job. Once fields look correct, click <b>Approve</b>.
+    <br/><br/>
+    <b>Address Comparison panel</b> — side-by-side view of the <b>Invoice Address</b> (extracted by OCR from the invoice) vs the <b>OE2 Job Address</b> (pulled from the matched AP number). If they don't match, a red ⚠ warning is shown and the invoice is flagged <i>Review Required</i>. The <b>Floor</b> field from the OE2 job is also shown here. OE2 fields are read-only; correct the AP# if the wrong job was matched.<br/>
+    A <b>🔗 View Original PDF</b> button is always visible so the reviewer can check the raw invoice at any time.
   </div>
 </div>
 <div class="oe2-app">
@@ -417,9 +484,9 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
     <span style="color:#777;">|</span>
     <span style="color:#555;">File: SherwinWilliamsInvoice.pdf &nbsp;·&nbsp; 2 pages &nbsp;·&nbsp; Detected: 05/23/2026 9:45 AM</span>
     <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:11px;color:#555;">Preview:</span>
-      <button class="btn btn-blue" style="font-size:11px;">👁 Showing</button>
-      <button class="btn btn-white" style="font-size:11px;">Hide Preview</button>
+      <a class="btn btn-blue" style="font-size:12px;font-weight:bold;padding:4px 14px;text-decoration:none;">🔗 View Original PDF</a>
+      <span style="color:#ccc;">|</span>
+      <button class="btn btn-white" style="font-size:11px;">👁 Hide Preview</button>
     </span>
   </div>
 
@@ -578,6 +645,59 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
       </div>
     </div>
 
+    <!-- Address Comparison -->
+    <div class="form-sec">
+      <div class="form-sec-hdr">📍 Address Comparison <span style="font-weight:normal;color:#888;font-size:11px;">Invoice Address (OCR) vs OE2 Job Address (from AP#)</span></div>
+      <div class="form-body">
+
+        <!-- Mismatch warning — shown when addresses don't match -->
+        <div style="background:#ffebee;border:1px solid #ef9a9a;border-left:4px solid #c62828;border-radius:3px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;margin-top:1px;">⚠️</span>
+          <div>
+            <div style="font-weight:bold;color:#c62828;font-size:12px;">Address Mismatch — Invoice sent to Review Required</div>
+            <div style="font-size:11px;color:#555;margin-top:3px;">The address on the invoice (<b>7 West 34th St</b>) does not match the OE2 job address for AP# 76228 (<b>450 7th Ave</b>). Verify the AP number is correct, or correct the address, before approving.</div>
+          </div>
+        </div>
+
+        <!-- Side-by-side address panels -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px;">
+
+          <!-- Invoice Address from OCR -->
+          <div style="border:1px solid #ffccbc;border-radius:4px;padding:10px 12px;background:#fff8f5;">
+            <div style="font-size:11px;font-weight:bold;color:#bf360c;margin-bottom:8px;">📄 Invoice Address <span style="font-weight:normal;color:#999;">(from OCR)</span></div>
+            <div class="f-row" style="margin-bottom:6px;">
+              <label style="min-width:90px;font-size:11px;">Street</label>
+              <input class="f-inp w220 mi" type="text" value="7 West 34th St" style="border-color:#ff9800;"/>
+            </div>
+            <div class="f-row">
+              <label style="min-width:90px;font-size:11px;">City / State / Zip</label>
+              <input class="f-inp w220" type="text" value="New York NY 10001"/>
+            </div>
+          </div>
+
+          <!-- OE2 Job Address (read-only) -->
+          <div style="border:1px solid #b0bec5;border-radius:4px;padding:10px 12px;background:#f9f9f9;">
+            <div style="font-size:11px;font-weight:bold;color:#37474f;margin-bottom:8px;">🏢 OE2 Job Address <span style="font-weight:normal;color:#999;">(AP# 76228 · read-only)</span></div>
+            <div class="f-row" style="margin-bottom:6px;">
+              <label style="min-width:90px;font-size:11px;">Street</label>
+              <input class="f-inp w220" type="text" value="450 7th Ave" style="background:#eeeeee;color:#555;" readonly/>
+            </div>
+            <div class="f-row" style="margin-bottom:6px;">
+              <label style="min-width:90px;font-size:11px;">City / State / Zip</label>
+              <input class="f-inp w220" type="text" value="New York NY 10123" style="background:#eeeeee;color:#555;" readonly/>
+            </div>
+            <div class="f-row">
+              <label style="min-width:90px;font-size:11px;">Floor <span style="font-weight:normal;color:#888;">(OE2)</span></label>
+              <input class="f-inp" type="text" value="14" style="width:60px;background:#eeeeee;color:#555;font-weight:bold;" readonly/>
+              <span style="font-size:10px;color:#888;margin-left:4px;">from OE2 job record</span>
+            </div>
+          </div>
+
+        </div>
+        <div style="font-size:11px;color:#888;">OE2 address and floor are read-only — sourced from the matched AP#. If the wrong job was matched, correct the AP# in the field above and the OE2 fields will refresh.</div>
+      </div>
+    </div>
+
     <!-- Charge Amount -->
     <div class="form-sec">
       <div class="form-sec-hdr">💲 Charge Amount</div>
@@ -598,6 +718,7 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#f0f0f0;}
       <button class="btn btn-green" style="font-size:13px;padding:5px 16px;">✅ Approve Invoice</button>
       <button class="btn btn-blue">💾 Save Changes</button>
       <button class="btn btn-orange">🚩 Flag for Review</button>
+      <a class="btn btn-white" style="font-size:12px;font-weight:bold;text-decoration:none;border-color:#4a90d9;color:#1a5276;">🔗 View Original PDF</a>
       <button class="btn btn-white" style="margin-left:auto;">← Back to List</button>
       <button class="btn btn-red">🗑️ Delete</button>
     </div>
