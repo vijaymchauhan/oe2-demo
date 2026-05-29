@@ -1103,6 +1103,69 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
   </div>
 </div>
 
+<!-- ── PDF PENDING CHANGES CALLOUT (May 27 meeting) ── -->
+<div style="max-width:1200px;margin:0 auto 14px;padding:0 16px;">
+  <div style="border:2px solid #e07b00;border-radius:4px;overflow:hidden;">
+
+    <!-- Header bar -->
+    <div style="background:#e07b00;padding:7px 14px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:16px;">📋</span>
+      <span style="font-weight:bold;color:#fff;font-size:13px;">PDF Changes — Pending Development (from May 27 Meeting)</span>
+      <span style="margin-left:auto;background:#fff3;color:#fff;font-size:10px;font-weight:bold;padding:2px 8px;border-radius:10px;">5 items · not yet implemented</span>
+    </div>
+
+    <!-- Body -->
+    <div style="background:#fff8f0;padding:12px 16px;">
+      <p style="font-size:11px;color:#7a5000;margin-bottom:10px;">
+        The proposal PDF output (shown below) needs the following changes when building the print/email feature. The preview image is kept as-is for now — these are developer notes only.
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#ffe0b2;">
+            <th style="padding:5px 10px;border:1px solid #ffcc80;text-align:left;width:30px;">#</th>
+            <th style="padding:5px 10px;border:1px solid #ffcc80;text-align:left;width:200px;">Change</th>
+            <th style="padding:5px 10px;border:1px solid #ffcc80;text-align:left;">What to do</th>
+            <th style="padding:5px 10px;border:1px solid #ffcc80;text-align:left;width:180px;">Source field in OE2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#fff;">
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;color:#e07b00;text-align:center;">1</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;">Customer Job# in header</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;">Add <b>Customer Job#</b> to the proposal header meta section alongside Date, WO#, and PO#. Currently it is captured in the form but <u>not printed on the PDF</u>.</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-family:monospace;font-size:11px;color:#1a5276;">Customer Job# field</td>
+          </tr>
+          <tr style="background:#fafafa;">
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;color:#e07b00;text-align:center;">2</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;">"Attention:" line at top</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;">Print <b>Attention: [name]</b> in the recipient address block at the top of the proposal. This is the contact person at the customer company. Example: <i>Attention: Steve</i>. Confirmed in meeting: <i>"That's the CPC."</i></td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-family:monospace;font-size:11px;color:#1a5276;">CPC field (Customer Project Contact)</td>
+          </tr>
+          <tr style="background:#fff;">
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;color:#e07b00;text-align:center;">3</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;">PE as estimator / signer</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;">The PE (Project Estimator) name must appear on the PDF as the person who wrote/signed the estimate. Example: <i>Mark Klein</i> shown top-right. Confirmed: <i>"The signer of the proposal should be the PE."</i> PE is a <b>required</b> field.</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-family:monospace;font-size:11px;color:#1a5276;">PE field (required)</td>
+          </tr>
+          <tr style="background:#fafafa;">
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;color:#e07b00;text-align:center;">4</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;">Exclusions section below items</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;">The <b>Exclusions / Notes</b> block must be printed <u>after</u> the proposal items table — not before it, not beside it. Confirmed: <i>"Let's move exclusions below the proposal items."</i></td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-family:monospace;font-size:11px;color:#1a5276;">Exclusions / Notes textarea</td>
+          </tr>
+          <tr style="background:#fff;">
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;color:#e07b00;text-align:center;">5</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-weight:bold;">Match existing AP proposal layout</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;">The overall PDF layout must match the <b>existing Albert Pearlman proposal template</b> Randy shared in the meeting (the <i>proposal.jpg</i> reference below). Use that as the exact visual reference — Inclusions section, Exclusions section, header, footer, logo placement.</td>
+            <td style="padding:6px 10px;border:1px solid #ffe0cc;font-family:monospace;font-size:11px;color:#1a5276;">See proposal.jpg below</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
 <div style="max-width:1200px;margin:0 auto 40px;padding:0 16px;">
 <div class="print-wrap">
   <img src="proposal.jpg"/>
