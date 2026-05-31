@@ -764,11 +764,15 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
     <h4>Action buttons explained</h4>
     <ul>
       <li><b>📄 New Revision</b> — Creates a copy with the next revision number (e.g., 10001.01). The current version is preserved as a read-only historical record.</li>
-      <li><b>🔄 Convert to Job</b> — Opens the Convert to Job dialog. User selects items, verifies the combined description, and enters the <b>Agreed Amount</b>. Creates one Job record. See Screen 4.</li>
+      <li><b>🔄 Convert to Job</b> — <i>Visible only when proposal type is Existing Customer or Prospect (New).</i> Opens the Convert to Job dialog. User selects items, verifies the combined description, and enters the <b>Agreed Amount</b>. Creates one Job record. See Screen 4.</li>
+      <li><b>✅ Approve Extra</b> — <i>Visible only when proposal type is Existing AP (Extra).</i> Replaces "Convert to Job". Because the extra is already on the AP run as a <b>P</b> (Proposed) row, clicking this changes its status to <b>O</b> (Approved) directly — no new job is created. No dialog needed.</li>
       <li><b>🖨️ Print</b> — Generates the formatted Albert Pearlman proposal document. All fields auto-populate from the proposal record.</li>
       <li><b>✉️ Email</b> — Opens Outlook with the proposal PDF attached and customer details pre-filled.</li>
       <li><b>📋 Clone Proposal</b> — Copies all proposal details (line items, job name, dates, assignments) except the customer name — left blank for the user to select. A new proposal number is assigned. Used when quoting the same scope to a different GC/customer.</li>
     </ul>
+    <div style="margin-top:8px;padding:7px 12px;background:#fff3e0;border-left:3px solid #e07b00;border-radius:2px;font-size:12px;">
+      <b>⚠ Key rule:</b> "Convert to Job" and "Approve Extra" are mutually exclusive — only one appears depending on the proposal type (<b>Existing Customer / Prospect</b> → Convert to Job &nbsp;|&nbsp; <b>Existing AP (Extra)</b> → Approve Extra). Both screens are shown below for comparison.
+    </div>
   </div>
 </div>
 
@@ -794,7 +798,12 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
     </div>
     <div class="oe2-form-area">
 
-      <div class="oe2-action-bar">
+      <!-- ── Variant A: Existing Customer / Prospect ── -->
+      <div style="font-size:11px;font-weight:bold;color:#1e3a5f;margin-bottom:3px;padding:0 2px;">
+        Variant A — Existing Customer or Prospect (New)
+        <span style="font-size:10px;font-weight:normal;color:#888;margin-left:6px;">Proposal type: Existing Customer · Prospect (New)</span>
+      </div>
+      <div class="oe2-action-bar" style="margin-bottom:4px;">
         <span class="oe2-action-label">Actions :</span>
         <button class="oe2-btn oe2-btn-white">📄 New Revision</button>
         <button class="oe2-btn oe2-btn-green">🔄 Convert to Job</button>
@@ -804,6 +813,25 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
         <span style="margin-left:auto;font-size:12px;color:#555;">
           Proposal <b class="prop-num">10001.00</b> &nbsp;|&nbsp;
           Status: <span class="oe2-badge badge-approved">Approved</span>
+        </span>
+      </div>
+
+      <!-- ── Variant B: Existing AP (Extra) ── -->
+      <div style="font-size:11px;font-weight:bold;color:#b45309;margin:10px 0 3px;padding:0 2px;display:flex;align-items:center;gap:8px;">
+        Variant B — Existing AP (Extra)
+        <span style="font-size:10px;font-weight:normal;color:#888;">Proposal type: Existing AP (Extra) → <b style="color:#e07b00;">"Convert to Job" is replaced by "Approve Extra"</b></span>
+        <span style="background:#fff3cd;border:1px solid #e09c00;border-radius:3px;font-size:10px;color:#7a5000;padding:1px 7px;font-weight:bold;">★ NEW</span>
+      </div>
+      <div class="oe2-action-bar" style="border-color:#ffd75e;background:#fffdf0;margin-bottom:12px;">
+        <span class="oe2-action-label">Actions :</span>
+        <button class="oe2-btn oe2-btn-white">📄 New Revision</button>
+        <button class="oe2-btn" style="background:#e07b00;color:#fff;border-color:#c56e00;font-weight:bold;">✅ Approve Extra</button>
+        <button class="oe2-btn oe2-btn-white">🖨️ Print</button>
+        <button class="oe2-btn oe2-btn-white">✉️ Email</button>
+        <button class="oe2-btn oe2-btn-white">📋 Clone Proposal</button>
+        <span style="margin-left:auto;font-size:12px;color:#555;">
+          Proposal <b class="prop-num">10001.01</b> &nbsp;|&nbsp;
+          Status: <span class="oe2-badge badge-proposed" style="background:#fff3cd;color:#856404;border:1px solid #ffd75e;padding:1px 8px;border-radius:3px;font-size:11px;">P — Proposed</span>
         </span>
       </div>
 
