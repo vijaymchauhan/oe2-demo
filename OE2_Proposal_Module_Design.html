@@ -556,7 +556,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
       <li><b>PM/Biller</b> and <b>PE</b> are required (<span class="req">*</span>). PE name prints as the Estimator/signer on the proposal.</li>
       <li><b>CPC</b> — Customer Project Contact. Prints as "ATTN:" on the proposal. Shown next to the Customer field.</li>
       <li><b>Valid Until Date</b> — Auto-set to +1 year from proposal date. Always editable.</li>
-      <li><b>ALT * checkbox</b> — Marks an item as an Alternate; excluded from the main subtotal on the printed proposal.</li>
+      <li><b>ALT * checkbox</b> — Marks an item as an Alternate. When checked, the item <b>is included</b> in the Proposal Total. Uncheck to exclude it from the total (e.g. scope the customer hasn't accepted).</li>
     </ul>
   </div>
 </div>
@@ -602,7 +602,8 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
               <input class="oe2-input w300 placeholder" value="Select Customer…" readonly/>
               <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 10px;">🔍 Lookup</button>
               <label style="font-size:12px;color:#222;white-space:nowrap;margin-left:10px;">CPC :</label>
-              <select class="oe2-select-field w140"><option>Select Contact…</option></select>
+              <input class="oe2-input w160" list="cpc-list-create" placeholder="Select or type contact…"/>
+              <datalist id="cpc-list-create"><option value="Steve"/><option value="John"/><option value="Maria"/><option value="Randy"/></datalist>
             </div>
           </div>
         </div>
@@ -682,7 +683,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
           <tbody>
             <tr>
               <td><input class="oe2-input" style="width:98%;" value="Site Preparation" readonly/></td>
-              <td><textarea class="oe2-textarea" style="width:98%;height:54px;" readonly>Site Preparation &amp; Grading — includes surface cleaning and masking of all adjacent surfaces.</textarea></td>
+              <td><textarea class="oe2-textarea" style="width:98%;height:80px;" readonly>Site Preparation &amp; Grading — includes surface cleaning and masking of all adjacent surfaces.</textarea></td>
               <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
               <td><input class="oe2-input" style="width:90px;" value="8,000.00" readonly/></td>
               <td><b>$8,000.00</b></td>
@@ -715,24 +716,20 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
         <div style="display:flex;justify-content:flex-end;margin-top:8px;">
           <table style="font-size:12px;border-collapse:collapse;min-width:300px;">
             <tr>
-              <td style="padding:4px 12px;color:#555;text-align:right;">Subtotal (excl. ALT):</td>
-              <td style="padding:4px 12px;font-weight:bold;text-align:right;min-width:110px;">$20,000.00</td>
-            </tr>
-            <tr>
-              <td style="padding:4px 12px;color:#e07b00;text-align:right;">ALT Items:</td>
-              <td style="padding:4px 12px;font-weight:bold;text-align:right;color:#e07b00;">$4,500.00</td>
+              <td style="padding:4px 12px;color:#555;text-align:right;">Subtotal (incl. checked ALT):</td>
+              <td style="padding:4px 12px;font-weight:bold;text-align:right;min-width:110px;">$24,500.00</td>
             </tr>
             <tr>
               <td style="padding:4px 12px;color:#555;text-align:right;">Tax (NYC 8.875%):</td>
-              <td style="padding:4px 12px;font-weight:bold;text-align:right;">$1,775.00</td>
+              <td style="padding:4px 12px;font-weight:bold;text-align:right;">$2,174.38</td>
             </tr>
             <tr style="border-top:2px solid #4a90d9;">
               <td style="padding:6px 12px;font-weight:bold;font-size:13px;color:#1e3a5f;text-align:right;">Proposal Total (incl. Tax):</td>
-              <td style="padding:6px 12px;font-weight:bold;font-size:14px;text-align:right;color:#1e3a5f;">$21,775.00</td>
+              <td style="padding:6px 12px;font-weight:bold;font-size:14px;text-align:right;color:#1e3a5f;">$26,674.38</td>
             </tr>
           </table>
         </div>
-        <div style="font-size:11px;color:#888;padding:4px 8px;">* Items marked ALT are Alternates — excluded from the main Subtotal on the printed proposal.</div>
+        <div style="font-size:11px;color:#888;padding:4px 8px;">* Items marked ALT are Alternates. <b>Checked</b> ALT items are included in the Proposal Total; uncheck to exclude.</div>
       </div>
 
       <!-- Exclusions / Notes — BELOW Proposal Items -->
@@ -852,7 +849,8 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
               <input class="oe2-input w300" value="OBRA" readonly/>
               <button class="oe2-btn oe2-btn-blue" style="font-size:11px;padding:2px 10px;">🔍 Change</button>
               <label style="font-size:12px;color:#222;white-space:nowrap;margin-left:10px;">CPC :</label>
-              <select class="oe2-select-field w140"><option>Steve</option></select>
+              <input class="oe2-input w160" list="cpc-list-edit" value="Steve" placeholder="Select or type contact…"/>
+              <datalist id="cpc-list-edit"><option value="Steve"/><option value="John"/><option value="Maria"/><option value="Randy"/></datalist>
             </div>
           </div>
         </div>
@@ -927,7 +925,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
           <tbody>
             <tr>
               <td><input class="oe2-input" style="width:98%;" value="Wall Preparation" readonly/></td>
-              <td><textarea class="oe2-textarea" style="width:98%;height:54px;" readonly>Lobby Wall Preparation — scrape, sand, and prime all wall surfaces. Apply two coats approved paint.</textarea></td>
+              <td><textarea class="oe2-textarea" style="width:98%;height:80px;" readonly>Lobby Wall Preparation — scrape, sand, and prime all wall surfaces. Apply two coats approved paint.</textarea></td>
               <td class="center"><input class="oe2-input w80" value="1" readonly/></td>
               <td><input class="oe2-input" style="width:90px;" value="3,500.00" readonly/></td>
               <td><b>$3,500.00</b></td>
@@ -960,24 +958,20 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
         <div style="display:flex;justify-content:flex-end;margin-top:8px;">
           <table style="font-size:12px;border-collapse:collapse;min-width:300px;">
             <tr>
-              <td style="padding:4px 12px;color:#555;text-align:right;">Subtotal (excl. ALT):</td>
-              <td style="padding:4px 12px;font-weight:bold;text-align:right;min-width:110px;">$6,750.00</td>
-            </tr>
-            <tr>
-              <td style="padding:4px 12px;color:#e07b00;text-align:right;">ALT Items:</td>
-              <td style="padding:4px 12px;font-weight:bold;text-align:right;color:#e07b00;">$2,000.00</td>
+              <td style="padding:4px 12px;color:#555;text-align:right;">Subtotal (incl. checked ALT):</td>
+              <td style="padding:4px 12px;font-weight:bold;text-align:right;min-width:110px;">$8,750.00</td>
             </tr>
             <tr>
               <td style="padding:4px 12px;color:#555;text-align:right;">Tax (NYC 8.875%):</td>
-              <td style="padding:4px 12px;font-weight:bold;text-align:right;">$599.06</td>
+              <td style="padding:4px 12px;font-weight:bold;text-align:right;">$776.56</td>
             </tr>
             <tr style="border-top:2px solid #4a90d9;">
               <td style="padding:6px 12px;font-weight:bold;font-size:13px;color:#1e3a5f;text-align:right;">Proposal Total (incl. Tax):</td>
-              <td style="padding:6px 12px;font-weight:bold;font-size:14px;text-align:right;color:#1e3a5f;">$7,349.06</td>
+              <td style="padding:6px 12px;font-weight:bold;font-size:14px;text-align:right;color:#1e3a5f;">$9,526.56</td>
             </tr>
           </table>
         </div>
-        <div style="font-size:11px;color:#888;padding:4px 8px;">* Items marked ALT are Alternates — excluded from the main Subtotal on the printed proposal.</div>
+        <div style="font-size:11px;color:#888;padding:4px 8px;">* Items marked ALT are Alternates. <b>Checked</b> ALT items are included in the Proposal Total; uncheck to exclude.</div>
       </div>
 
       <!-- Exclusions — BELOW Proposal Items -->
@@ -1010,7 +1004,7 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
     <ul>
       <li><b>Step 1</b> — Check the items to include. Uncheck any items the customer did not approve (e.g., ALT items not accepted).</li>
       <li><b>Step 2</b> — Review the <b>Combined Job Description</b> — the system merges all selected item descriptions. Edit the text if needed.</li>
-      <li><b>Step 3</b> — Enter the <b>Customer Job #</b> and the <b>Agreed Amount</b> (the final negotiated price — this may differ from the proposal sum if the customer negotiated a different price).</li>
+      <li><b>Step 3</b> — Enter the <b>Agreed Amount</b> (required — the final negotiated price). Optionally enter the <b>Customer Job #</b> and <b>Customer PO / Change Order #</b> if available.</li>
       <li><b>Step 4</b> — Review the <b>Job to be Created</b> summary and click <b>Create Job</b>.</li>
     </ul>
   </div>
@@ -1068,19 +1062,24 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
             <textarea class="oe2-textarea" style="width:100%;height:64px;">Lobby Wall Preparation — scrape, sand, and prime all wall surfaces. Apply two coats approved paint. Ceiling Paint — 2 coats of approved ceiling white throughout lobby area.</textarea>
           </div>
 
-          <!-- Customer Job # + Agreed Amount -->
+          <!-- Agreed Amount + Customer Job # + PO/CO# -->
           <div style="background:#fff8f0;border:1px solid #e07b00;border-left:4px solid #e07b00;border-radius:3px;padding:12px 14px;margin-top:12px;">
-            <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <label style="font-size:12px;font-weight:bold;color:#222;white-space:nowrap;">Customer Job # <span class="req">*</span></label>
-                <input class="oe2-input w160 highlight-field" value="CJ-2026-0441" readonly/>
-              </div>
+            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
               <div style="display:flex;align-items:center;gap:8px;">
                 <label style="font-size:12px;font-weight:bold;color:#222;white-space:nowrap;">Agreed Amount <span class="req">*</span></label>
                 <input class="oe2-input w120 highlight-field" value="6,500.00" readonly/>
-                <span style="font-size:11px;color:#888;">Proposal sum: $6,750.00</span>
+                <span style="font-size:11px;color:#888;">Proposal sum: $8,750.00</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:12px;font-weight:bold;color:#222;white-space:nowrap;">Customer Job #</label>
+                <input class="oe2-input w160" value="CJ-2026-0441" readonly/>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:12px;font-weight:bold;color:#222;white-space:nowrap;">Customer PO / Change Order #</label>
+                <input class="oe2-input w160 placeholder" value="Optional" readonly/>
               </div>
             </div>
+            <div style="font-size:11px;color:#888;margin-top:8px;">Only <b>Agreed Amount</b> is required. Customer Job # and PO / Change Order # are optional.</div>
           </div>
 
           <!-- Job to be created summary -->
@@ -1097,6 +1096,185 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
         <div class="oe2-modal-ftr">
           <button class="oe2-btn oe2-btn-white">Cancel</button>
           <button class="oe2-btn oe2-btn-green">✅ Create Job</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 4B — APPROVE EXTRA (MODAL)
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 4B — Approve Extra (Confirmation Modal)</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>Opens when the user clicks <b>✅ Approve Extra</b> on a proposal with type <b>Existing AP (Extra)</b>. The extra is already on the AP run as a <b>P</b> (Proposed) row — clicking Approve Extra changes its status to <b>O</b> (Approved) directly. No new job is created.</p>
+    <br/>
+    <h4>How to use it</h4>
+    <ul>
+      <li>Optionally enter the <b>Customer PO / Change Order #</b> if the customer has provided one. This is stored against the extra and useful for billing and tracking.</li>
+      <li>Click <b>Approve Extra</b> to confirm — AP run status changes from <b>P → O</b>.</li>
+      <li>Click <b>Proceed Without PO #</b> to approve now and enter the PO number later by editing the proposal.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="oe2-app">
+  <div class="oe2-topbar"><div class="oe2-logo">Albert Pearlman OE-2</div><div class="oe2-userinfo">Welcome <b>Reliable</b><span>👤 <a>My Account</a></span></div></div>
+  <div class="oe2-nav"><div class="oe2-nav-home">🏠</div><div class="oe2-tab">Job</div><div class="oe2-tab active">Proposal</div><div class="oe2-tab">Customer</div></div>
+  <div class="oe2-banner"><div class="oe2-banner-icon">📋</div><div class="oe2-banner-label">Proposals</div></div>
+  <div class="oe2-content">
+    <div class="oe2-modal-backdrop">
+      <div class="oe2-modal" style="width:500px;">
+        <div class="oe2-modal-hdr" style="background:#e07b00;">✅ Approve Extra <span style="font-weight:normal;font-size:12px;opacity:.8;">Proposal # 10004.00 · AP# 75580</span></div>
+        <div class="oe2-modal-body">
+
+          <div style="background:#fff3e0;border:1px solid #ffcc80;border-left:4px solid #e07b00;border-radius:3px;padding:10px 14px;margin-bottom:16px;font-size:12px;line-height:1.7;color:#7a5000;">
+            <b>This will change status P → O (Approved)</b> on the AP run for:<br/>
+            <span style="font-size:13px;font-weight:bold;color:#222;">Office 12F – Extra Painting</span>
+            <span style="font-size:12px;color:#555;margin-left:10px;">$2,400.00</span>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:bold;color:#222;display:block;margin-bottom:6px;">
+              Customer PO / Change Order #
+              <span style="font-size:11px;font-weight:normal;color:#888;margin-left:6px;">(optional — enter now or leave blank)</span>
+            </label>
+            <input class="oe2-input w300 placeholder" value="e.g. PO-2026-0881 or CO-14" readonly/>
+          </div>
+
+          <div style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;">
+            You can leave this blank and add the PO / Change Order number later by editing the proposal.
+          </div>
+
+        </div>
+        <div class="oe2-modal-ftr" style="justify-content:space-between;">
+          <button class="oe2-btn oe2-btn-white">Cancel</button>
+          <div style="display:flex;gap:8px;">
+            <button class="oe2-btn oe2-btn-white" style="color:#777;">Proceed Without PO #</button>
+            <button class="oe2-btn" style="background:#e07b00;color:#fff;border-color:#c56e00;font-weight:bold;">✅ Approve Extra</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 4C — CONVERT TO JOB: PROSPECT SETUP
+     ══════════════════════════════════════════════════ -->
+<div style="max-width:1200px;margin:32px auto 0;">
+  <div class="doc-label">Screen 4C — Convert to Job: Prospect Customer Setup (Step 1 of 2)</div>
+  <div class="doc-desc">
+    <h4>What this screen does</h4>
+    <p>When the proposal type is <b>Prospect (New)</b>, clicking <b>Convert to Job</b> triggers an extra first step before job creation. The prospect's name was captured at proposal time, but the full customer profile must be completed before the system can create the customer record and the job.</p>
+    <br/>
+    <h4>How to use it</h4>
+    <ul>
+      <li><b>Step 1 (this screen)</b> — Confirm the customer name and fill in billing contact, billing address, tax status, and PO requirements. Required fields are marked <span class="req">*</span>. All other fields can be completed later in the Customer module.</li>
+      <li><b>Step 2</b> — Click <b>Next</b> to continue to the standard Convert to Job flow: select items, review combined description, and enter the Agreed Amount.</li>
+    </ul>
+    <div style="margin-top:8px;padding:7px 12px;background:#e8f0fe;border-left:3px solid #2563eb;border-radius:2px;font-size:12px;">
+      <b>ℹ️ Note:</b> A new Customer record is created in OE2 as part of this conversion. If the prospect already exists under a different name, use <b>Existing Customer</b> on the proposal instead.
+    </div>
+  </div>
+</div>
+
+<div class="oe2-app">
+  <div class="oe2-topbar"><div class="oe2-logo">Albert Pearlman OE-2</div><div class="oe2-userinfo">Welcome <b>Reliable</b><span>👤 <a>My Account</a></span></div></div>
+  <div class="oe2-nav"><div class="oe2-nav-home">🏠</div><div class="oe2-tab">Job</div><div class="oe2-tab active">Proposal</div><div class="oe2-tab">Customer</div></div>
+  <div class="oe2-banner"><div class="oe2-banner-icon">📋</div><div class="oe2-banner-label">Proposals</div></div>
+  <div class="oe2-content">
+    <div class="oe2-modal-backdrop">
+      <div class="oe2-modal" style="width:680px;">
+        <div class="oe2-modal-hdr">🔄 Convert Proposal to Job — New Customer Setup
+          <span style="font-weight:normal;font-size:12px;opacity:.8;">Step 1 of 2 · Proposal # 10003.00 (Prospect)</span>
+        </div>
+        <div class="oe2-modal-body">
+
+          <div style="background:#e8f0fe;border:1px solid #93c5fd;border-left:4px solid #2563eb;border-radius:3px;padding:10px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:#1e3a5f;">
+            <b>ℹ️ Prospect conversion:</b> Complete the customer record below before creating the job. Required fields are marked <span class="req">*</span>. Everything else can be filled in later via the Customer module.
+          </div>
+
+          <div style="font-size:12px;font-weight:bold;color:#1e3a5f;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">New Customer Details</div>
+
+          <!-- Customer Name -->
+          <div class="oe2-form-row" style="margin-bottom:8px;">
+            <div class="oe2-field">
+              <label style="min-width:150px;">Customer Name <span class="req">*</span></label>
+              <input class="oe2-input w300" value="Versatile Services LLC" readonly/>
+            </div>
+          </div>
+
+          <!-- Billing Contact -->
+          <div class="oe2-form-row" style="margin-bottom:8px;">
+            <div class="oe2-field">
+              <label style="min-width:150px;">Billing Contact <span class="req">*</span></label>
+              <input class="oe2-input w200 placeholder" value="Contact name" readonly/>
+            </div>
+            <div class="oe2-field">
+              <label style="min-width:50px;">Email</label>
+              <input class="oe2-input w200 placeholder" value="billing@example.com" readonly/>
+            </div>
+          </div>
+
+          <!-- Billing Address -->
+          <div class="oe2-form-row" style="margin-bottom:8px;">
+            <div class="oe2-field">
+              <label style="min-width:150px;">Billing Address</label>
+              <input class="oe2-input w300 placeholder" value="Street address" readonly/>
+            </div>
+          </div>
+          <div class="oe2-form-row" style="margin-bottom:8px;">
+            <div class="oe2-field">
+              <label style="min-width:150px;">City</label>
+              <input class="oe2-input w160 placeholder" value="City" readonly/>
+            </div>
+            <div class="oe2-field">
+              <label style="min-width:40px;">State</label>
+              <input class="oe2-input w80" value="NY" readonly/>
+            </div>
+            <div class="oe2-field">
+              <label style="min-width:30px;">Zip</label>
+              <input class="oe2-input w80 placeholder" value="Zip" readonly/>
+            </div>
+          </div>
+
+          <!-- Tax Status + PO Required -->
+          <div class="oe2-form-row" style="margin-bottom:8px;">
+            <div class="oe2-field">
+              <label style="min-width:150px;">Tax Status <span class="req">*</span></label>
+              <select class="oe2-select-field w180"><option>Taxable – NYC 8.875%</option><option>Exempt</option><option>Out of State</option></select>
+            </div>
+            <div class="oe2-field">
+              <label style="min-width:110px;">PO Required?</label>
+              <select class="oe2-select-field w140"><option>No</option><option>Yes — PO Required</option></select>
+            </div>
+          </div>
+
+          <!-- Phone + Notes -->
+          <div class="oe2-form-row" style="margin-bottom:4px;">
+            <div class="oe2-field">
+              <label style="min-width:150px;">Phone</label>
+              <input class="oe2-input w160 placeholder" value="Main phone" readonly/>
+            </div>
+            <div class="oe2-field">
+              <label style="min-width:90px;">Billing Notes</label>
+              <input class="oe2-input w220 placeholder" value="e.g. billing instructions, attn line" readonly/>
+            </div>
+          </div>
+
+          <div style="font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;margin-top:8px;">
+            Fields marked <span class="req">*</span> are required to create the customer record. All other fields can be completed later in the Customer module.
+          </div>
+
+        </div>
+        <div class="oe2-modal-ftr">
+          <button class="oe2-btn oe2-btn-white">Cancel</button>
+          <button class="oe2-btn oe2-btn-blue">Next — Select Items &amp; Agreed Amount →</button>
         </div>
       </div>
     </div>
@@ -1124,9 +1302,9 @@ code{font-family:Consolas,monospace;background:#f0f0f0;padding:1px 5px;border-ra
       <li><b>AP#</b> — From the <b>Proposal #</b> (e.g., 10001.00)</li>
       <li><b>Estimator</b> — From the <b>PE</b> field (Project Estimator — required)</li>
       <li><b>Line items</b> — Each row from <b>Proposal Items</b> with its Amount. Description from the item's Description textarea.</li>
-      <li><b>ALT * column</b> — Items with ALT checked are flagged; their amount is excluded from the Subtotal</li>
+      <li><b>ALT * column</b> — Items with ALT checked are flagged and included in the Proposal Total. Unchecked ALT items are excluded.</li>
       <li><b>Exclusions / Notes</b> — From the <b>Exclusions / Notes</b> field (printed below the items table)</li>
-      <li><b>Subtotal / Tax / Total</b> — Auto-calculated: Subtotal = sum of non-ALT items; Tax = Subtotal × Tax Code rate; Total = Subtotal + Tax</li>
+      <li><b>Subtotal / Tax / Total</b> — Auto-calculated: Subtotal = sum of all checked items (incl. checked ALT); Tax = Subtotal × Tax Code rate; Total = Subtotal + Tax</li>
     </ul>
   </div>
 </div>
